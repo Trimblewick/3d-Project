@@ -45,7 +45,6 @@ SystemClass::SystemClass()
 	s_bRunning = false;
 	s_bInitialized = false;
 	s_fDeltaTime = 0.0f;
-	
 }
 
 SystemClass::~SystemClass()

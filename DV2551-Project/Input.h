@@ -52,7 +52,7 @@ public:
 
 		SPACE = 32,
 		CTRL = 17
-	} KEYS;
+	};
 public:
 	Input();
 	~Input();
