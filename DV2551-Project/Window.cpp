@@ -50,6 +50,7 @@ bool Window::Initialize(HINSTANCE hinstance, int iCmdShow, LONG iWidth, LONG iHe
 	{
 		ShowWindow(m_hwnd, iCmdShow);
 	}
+
 	return true;
 }
 
