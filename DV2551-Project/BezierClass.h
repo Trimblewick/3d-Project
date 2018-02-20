@@ -2,6 +2,7 @@
 #include <d3d12.h>
 #include <d3dcompiler.h>
 #include <assert.h>
+#include "D3DFactory.h"
 
 struct float4
 {
@@ -17,7 +18,7 @@ public:
 	//public functions
 	BezierClass();
 	~BezierClass();
-	void SetRootDesc();
+	void DX12Highway();
 
 private:
 	//private functions
