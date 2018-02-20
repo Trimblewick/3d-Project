@@ -52,6 +52,10 @@ bool GameClass::Initialize(Window* pWindow)
 		m_pD3DFactory->GetDevice()->CreateRenderTargetView(m_ppRTV[i], nullptr, handleDH);
 		handleDH.ptr += iSizeOffsetRTV;
 	}
+	m_pClearColor[0] = 0.1f;
+	m_pClearColor[1] = 0.5f;
+	m_pClearColor[2] = 0.3f;
+	m_pClearColor[3] = 1.0f;
 	
 	
 	//set up default blend
@@ -131,18 +135,21 @@ void GameClass::ClearBackBuffer()
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
 
+	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
+	transition.pResource = m_ppRTV[iFrameIndex];
+	transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
 	D3D12_RESOURCE_BARRIER barrierTransition = {};
 	barrierTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrierTransition.Transition = transition;
 
-	pCL->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_ppRTV[iFrameIndex], D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
-
+	pCL->ResourceBarrier(1, &barrierTransition);
 	int iIncrementSizeRTV = m_pD3DFactory->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
 	handleDH.ptr += iIncrementSizeRTV * iFrameIndex;
 
-
 	pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
-	//pCL->ClearDepthStencilView(m_handleDepthStencil, D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
 }
 

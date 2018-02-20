@@ -27,7 +27,7 @@ public:
 private:
 	static const unsigned int		m_iBackBufferCount = 2;
 	double							m_dDeltaTime;
-
+	float							m_pClearColor[4];
 
 
 	D3DFactory*						m_pD3DFactory;
