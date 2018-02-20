@@ -1,6 +1,20 @@
 #include "stdafx.h"
 #include "BezierClass.h"
 
+//TODO: move root constants/paramters etc to factory, 
+//		make a uploadHeap function in D3DFactory,
+//		
+
+BezierClass::BezierClass()
+{
+	//interact with D3DFactory
+}
+
+BezierClass::~BezierClass()
+{
+	//DELET THIS, hihi
+}
+
 void BezierClass::SetRootDesc()
 {
 	//fill root desc, create input and register spaces etc..
@@ -18,7 +32,7 @@ void BezierClass::SetRootDesc()
 	rp[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 	rp[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-	float4 color;// = float4(1, 0.0f, 0.0f, 1.0f);
+	float4 color;
 	color.x = 1.0f;
 	color.y = 0.0f;
 	color.z = 0.0f;
@@ -33,5 +47,6 @@ void BezierClass::SetRootDesc()
 
 void BezierClass::CalculateBezierVertices()
 {
+	m_pBezierVertices.clear();
 	return;
 }

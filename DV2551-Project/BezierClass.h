@@ -3,8 +3,6 @@
 #include <d3dcompiler.h>
 #include <assert.h>
 
-//#include "stdafx.h"
-//calculates Bezier
 struct float4
 {
 	float x;
@@ -17,6 +15,8 @@ class BezierClass
 {
 public:
 	//public functions
+	BezierClass();
+	~BezierClass();
 	void SetRootDesc();
 
 private:
