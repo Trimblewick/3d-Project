@@ -91,7 +91,7 @@ ID3D12GraphicsCommandList * D3DFactory::CreateCL(ID3D12CommandAllocator * pCA, D
 {
 	ID3D12GraphicsCommandList* pCL;
 
-	DxAssert(m_pDevice->CreateCommandList(0, type, pCA, nullptr, IID_PPV_ARGS(&pCL)), S_OK);
+	DxAssert(m_pDevice->CreateCommandList(0, type, pCA, nullptr, IID_PPV_ARGS(&pCL)));
 
 	return pCL;
 }
@@ -125,12 +125,12 @@ ID3D12PipelineState * D3DFactory::CreatePSO(D3D12_GRAPHICS_PIPELINE_STATE_DESC *
 	return pPSO;
 }
 
-IDXGISwapChain3 * D3DFactory::CreateSwapChain(DXGI_SWAP_CHAIN_DESC desc, ID3D12CommandQueue * pCQ)
+IDXGISwapChain3 * D3DFactory::CreateSwapChain(DXGI_SWAP_CHAIN_DESC* pDesc, ID3D12CommandQueue * pCQ)
 {
 	IDXGISwapChain*		pTemp = nullptr;
 	IDXGISwapChain3*	pSwapChain = nullptr;
 
-	DxAssert(m_pDXGIFactory->CreateSwapChain(pCQ, &desc, &pTemp));
+	DxAssert(m_pDXGIFactory->CreateSwapChain(pCQ, desc, &pTemp));
 
 	pSwapChain = static_cast<IDXGISwapChain3*>(pTemp);
 
@@ -161,4 +161,31 @@ ID3DBlob * D3DFactory::CompileShader(LPCWSTR filePath, LPCSTR entrypoint, LPCSTR
 		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, &shaderBlob, nullptr));
 
 	return shaderBlob;
+}
+
+GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCAs, unsigned int iNumberOfCLs)
+{
+	if (iNumberOfCAs < iNumberOfCLs)
+	{
+		return nullptr;
+	}
+	ID3D12CommandQueue* pCQ = CreateCQ(type);
+
+	std::vector<ID3D12CommandAllocator*> ppCAs;
+	std::vector<ID3D12Fence*> ppFences;
+	std::vector<ID3D12GraphicsCommandList*> ppCLs;
+
+	for (int i = 0; i < iNumberOfCAs; ++i)
+	{
+		ppCAs.push_back(CreateCA(type));
+		ppFences.push_back(CreateFence());
+	}
+	for (int i = 0; i < iNumberOfCLs; ++i)
+	{
+		ppCLs.push_back(CreateCL(ppCAs[i], type));
+		DxAssert(ppCLs[i]->Close());
+	}
+
+
+	return new GPUHighway(type, pCQ, ppCAs.data(), ppFences.data(), iNumberOfCAs, ppCLs.data(), iNumberOfCLs);
 }

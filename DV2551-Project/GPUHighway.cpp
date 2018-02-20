@@ -11,7 +11,6 @@ GPUHighway::GPUHighway(
 	ID3D12GraphicsCommandList**		ppCLs, 
 	unsigned int					iNumberOfCLs)
 {
-	assert(iNumberOfCAsAndFences >= iNumberOfCLs);
 	m_type = type;
 	m_pCQ = pCQ;
 	
@@ -20,7 +19,6 @@ GPUHighway::GPUHighway(
 	m_iNumberOfCAsAndFences = iNumberOfCAsAndFences;
 
 	m_pFenceValues = new size_t[iNumberOfCAsAndFences];
-	m_ppCAVec = new std::vector<ID3D12CommandAllocator*>[iNumberOfCAsAndFences];
 	m_pFenceLocked = new bool[iNumberOfCAsAndFences];
 
 	m_handleFence = CreateEvent(NULL, NULL, NULL, NULL);
@@ -57,19 +55,62 @@ ID3D12CommandQueue * GPUHighway::GetCQ()
 	return m_pCQ;
 }
 
-void GPUHighway::QueueCL(ID3D12CommandList* pCL)
+void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 {
+	pCL->Close();
 	m_ppCLQ.push_back(pCL);
 }
 
 ID3D12GraphicsCommandList * GPUHighway::GetFreshCL()
 {
-	return nullptr;
+	Command newCommand;
+	for (int i = 0; i < m_iNumberOfCLs; ++i)//find free cl
+	{
+		if (!m_pCLLocked[i])
+		{
+			newCommand.pCL = m_ppCLs[i];
+			i = m_iNumberOfCLs;//exit
+		}
+	}
+
+	if (newCommand.pCL == nullptr)//need more cls
+		return nullptr;
+
+	int iSizeVec = m_commandVec.size();
+
+	if (iSizeVec >= m_iNumberOfCAsAndFences)
+		return nullptr;
+
+	for (int i = 0; i < iSizeVec; ++i)//find free ca
+	{
+		if (m_ppCAs[i] != m_commandVec[i].pCA)
+		{
+			newCommand.pCA = m_ppCAs[i];
+			i = iSizeVec;//exit
+		}
+	}
+
+	m_commandVec.push_back(newCommand);
+	newCommand.pCL->Reset(newCommand.pCA, nullptr);
+
+	return newCommand.pCL;
 }
 
 int GPUHighway::ExecuteCQ()
 {
 	m_pCQ->ExecuteCommandLists(m_ppCLQ.size(), m_ppCLQ.data());
+
+	for (Command c : m_commandVec)
+	{
+		for (ID3D12CommandList* p : m_ppCLQ)
+		{
+			if (c.pCL == p)
+			{
+				c.pCL = nullptr;
+				break;
+			}
+		}
+	}
 	m_ppCLQ.clear();
 
 	int index = -1;
@@ -99,7 +140,15 @@ void GPUHighway::Wait(int index)
 	m_pFenceLocked[index] = false;
 
 	//reset CAs
-	DxAssert(m_ppCAs[index]->Reset());
+	for (int i = 0; i < m_commandVec.size(); ++i)
+	{
+		if (m_commandVec[i].pCL = nullptr)
+		{
+			DxAssert(m_commandVec[i].pCA->Reset());
+			m_commandVec[i].pCA = nullptr;
+			m_commandVec.erase(m_commandVec.begin() + i, m_commandVec.begin() + i + 1);
+		}
+	}
 }
 
 void GPUHighway::WaitForAllFences()

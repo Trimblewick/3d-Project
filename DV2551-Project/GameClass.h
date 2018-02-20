@@ -12,7 +12,7 @@ public:
 	GameClass();
 	~GameClass();
 
-	bool Initialize();
+	bool Initialize(Window* pWindow);
 	void CleanUp();
 
 	void Update(Input* input, double dDeltaTime);
@@ -27,8 +27,11 @@ private:
 	const unsigned int		m_iBackBufferCount = 2;
 	double					m_dDeltaTime;
 
+
+
 	D3DFactory*				m_pD3DFactory;
-	GPUHighway*				m_pGPUHighway;
+	GPUHighway*				m_pGraphicsHighway;
+
 
 	IDXGISwapChain3*		m_pSwapChain;
 	
