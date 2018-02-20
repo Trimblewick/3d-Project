@@ -17,8 +17,8 @@ public:
 	void							CleanUp();
 
 	void							Update(Input* input, double dDeltaTime);
-	void							ClearBackBuffer();
-	void							PrecentBackBuffer();
+	ID3D12GraphicsCommandList*							ClearBackBuffer();
+	void							PrecentBackBuffer(ID3D12GraphicsCommandList* pCL);
 	void							Frame();
 
 

@@ -128,9 +128,11 @@ void GameClass::CleanUp()
 void GameClass::Update(Input * input, double dDeltaTime)
 {
 	m_dDeltaTime = dDeltaTime;
+	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
+	PrecentBackBuffer(pCLtest);
 }
 
-void GameClass::ClearBackBuffer()
+ID3D12GraphicsCommandList* GameClass::ClearBackBuffer()
 {
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
@@ -151,12 +153,33 @@ void GameClass::ClearBackBuffer()
 
 	pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
 	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
+	return pCL;
 }
 
 
-void GameClass::PrecentBackBuffer()
+void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 {
+	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 
+	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
+	transition.pResource = m_ppRTV[iFrameIndex];
+	transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET; 	
+	transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+	D3D12_RESOURCE_BARRIER barrierTransition = {};
+	barrierTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrierTransition.Transition = transition;
+
+
+	pCL->ResourceBarrier(1, &barrierTransition);
+	pCL->Close();
+
+	m_pGraphicsHighway->QueueCL(pCL);
+	m_pGraphicsHighway->ExecuteCQ();
+
+	m_pSwapChain->Present(0, 0);
+
+	m_pGraphicsHighway->WaitForAllFences();
 
 }
 

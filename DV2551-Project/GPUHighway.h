@@ -32,7 +32,7 @@ public:
 
 	ID3D12CommandQueue*						GetCQ();
 
-	void									QueueCL(ID3D12GraphicsCommandList* pCL);//Make sure only to queue commandlists on the same highway
+	void									QueueCL(ID3D12GraphicsCommandList* pCL);//Make sure only to queue commandlists on the same highway. close list aswell
 	ID3D12GraphicsCommandList*				GetFreshCL();
 	
 	int										ExecuteCQ();//Execute all queued commandlists. Returns the index of the fence used.

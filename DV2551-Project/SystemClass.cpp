@@ -117,9 +117,9 @@ void SystemClass::Run()
 
 			//basic flow
 			s_game.Update(&s_input, s_fDeltaTime);
-			s_game.ClearBackBuffer();
-			s_game.Frame();
-			s_game.PrecentBackBuffer();
+			//s_game.ClearBackBuffer();
+			//s_game.Frame();
+			//s_game.PrecentBackBuffer();
 
 			
 		}

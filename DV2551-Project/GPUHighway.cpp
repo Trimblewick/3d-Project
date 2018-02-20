@@ -57,7 +57,6 @@ ID3D12CommandQueue * GPUHighway::GetCQ()
 
 void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 {
-	pCL->Close();
 	m_ppCLQ.push_back(pCL);
 }
 
