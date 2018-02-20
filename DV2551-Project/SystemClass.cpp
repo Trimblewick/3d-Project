@@ -63,7 +63,7 @@ bool SystemClass::Initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, int i
 	{
 		return false;
 	}
-	if (!s_game.Initialize())
+	if (!s_game.Initialize(&s_window))
 	{
 		return false;
 	}

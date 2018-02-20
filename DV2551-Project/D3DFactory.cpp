@@ -130,7 +130,7 @@ IDXGISwapChain3 * D3DFactory::CreateSwapChain(DXGI_SWAP_CHAIN_DESC* pDesc, ID3D1
 	IDXGISwapChain*		pTemp = nullptr;
 	IDXGISwapChain3*	pSwapChain = nullptr;
 
-	DxAssert(m_pDXGIFactory->CreateSwapChain(pCQ, desc, &pTemp));
+	DxAssert(m_pDXGIFactory->CreateSwapChain(pCQ, pDesc, &pTemp));
 
 	pSwapChain = static_cast<IDXGISwapChain3*>(pTemp);
 

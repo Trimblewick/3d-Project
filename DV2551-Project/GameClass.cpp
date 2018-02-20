@@ -1,7 +1,7 @@
 #include "stdafx.h"
 
 #include "GameClass.h"
-#include "Window.h"
+
 
 GameClass::GameClass()
 {
@@ -40,7 +40,21 @@ bool GameClass::Initialize(Window* pWindow)
 
 		m_pSwapChain = m_pD3DFactory->CreateSwapChain(&descSwapChain, m_pGraphicsHighway->GetCQ());
 	}
+
+	{	//create rtvs and descriptor heap
+		m_pDHRTV = m_pD3DFactory->CreateDH(m_iBackBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
+		int iSizeOffsetRTV = m_pD3DFactory->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+		D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
+
+		for (int i = 0; i < m_iBackBufferCount; ++i)
+		{
+			DxAssert(m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_ppRTV[i])));
+			m_pD3DFactory->GetDevice()->CreateRenderTargetView(m_ppRTV[i], nullptr, handleDH);
+			handleDH.ptr += iSizeOffsetRTV;
+		}
+	}
 	
+
 	return true;
 }
 
