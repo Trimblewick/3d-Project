@@ -35,7 +35,7 @@ GPUHighway::GPUHighway(
 	m_pCLLocked = new bool[iNumberOfCLs];
 	for (int i = 0; i < iNumberOfCLs; ++i)
 	{
-		m_pCLLocked = false;
+		m_pCLLocked[i] = false;
 	}
 }
 
@@ -69,6 +69,7 @@ ID3D12GraphicsCommandList * GPUHighway::GetFreshCL()
 		{
 			newCommand.pCL = m_ppCLs[i];
 			i = m_iNumberOfCLs;//exit
+			m_pCLLocked[i] = true;
 		}
 	}
 
@@ -78,17 +79,24 @@ ID3D12GraphicsCommandList * GPUHighway::GetFreshCL()
 	int iSizeVec = m_commandVec.size();
 
 	if (iSizeVec >= m_iNumberOfCAsAndFences)
-		return nullptr;
-
-	for (int i = 0; i < iSizeVec; ++i)//find free ca
 	{
-		if (m_ppCAs[i] != m_commandVec[i].pCA)
+		return nullptr;
+	}
+	else if (iSizeVec == 0)
+	{
+		newCommand.pCA = m_ppCAs[0];
+	}
+	else
+	{
+		for (int i = 0; i < iSizeVec; ++i)//find free ca
 		{
-			newCommand.pCA = m_ppCAs[i];
-			i = iSizeVec;//exit
+			if (m_ppCAs[i] != m_commandVec[i].pCA)
+			{
+				newCommand.pCA = m_ppCAs[i];
+				i = iSizeVec;//exit
+			}
 		}
 	}
-
 	m_commandVec.push_back(newCommand);
 	newCommand.pCL->Reset(newCommand.pCA, nullptr);
 
