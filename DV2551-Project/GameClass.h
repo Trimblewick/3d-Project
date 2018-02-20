@@ -37,6 +37,9 @@ private:
 	IDXGISwapChain3*				m_pSwapChain;
 	ID3D12Resource*					m_ppRTV[m_iBackBufferCount];
 	ID3D12DescriptorHeap*			m_pDHRTV;
+
+	ID3D12RootSignature*			tempRS;
+	ID3D12PipelineState*			tempPSO;
 	
 };
  

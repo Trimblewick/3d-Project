@@ -22,7 +22,7 @@ public:
 	ID3D12PipelineState*					CreatePSO(D3D12_GRAPHICS_PIPELINE_STATE_DESC* pDesc);
 	IDXGISwapChain3*						CreateSwapChain(DXGI_SWAP_CHAIN_DESC* pDesc, ID3D12CommandQueue* pCQ);
 	ID3D12DescriptorHeap*					CreateDH(int numDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE type, bool bShaderVisible);
-	ID3DBlob*								CompileShader(LPCWSTR filePath, LPCSTR entrypoint, LPCSTR shadermodel);
+	ID3DBlob*								CompileShader(LPCWSTR filePath, LPCSTR shadermodel);
 	GPUHighway*								CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCAs, unsigned int iNumberOfCLs);
 
 private:

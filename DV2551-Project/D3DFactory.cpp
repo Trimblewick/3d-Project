@@ -153,11 +153,11 @@ ID3D12DescriptorHeap * D3DFactory::CreateDH(int numDescriptors, D3D12_DESCRIPTOR
 	return pDH;
 }
 
-ID3DBlob * D3DFactory::CompileShader(LPCWSTR filePath, LPCSTR entrypoint, LPCSTR shadermodel)
+ID3DBlob * D3DFactory::CompileShader(LPCWSTR filePath, LPCSTR shadermodel)
 {
 	ID3DBlob* shaderBlob;
 
-	DxAssert(D3DCompileFromFile(filePath, nullptr, nullptr, entrypoint, shadermodel,
+	DxAssert(D3DCompileFromFile(filePath, nullptr, nullptr, "main", shadermodel,
 		D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION, 0, &shaderBlob, nullptr));
 
 	return shaderBlob;
