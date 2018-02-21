@@ -189,3 +189,58 @@ GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned
 
 	return new GPUHighway(type, pCQ, ppCAs.data(), ppFences.data(), iNumberOfCAs, ppCLs.data(), iNumberOfCLs);
 }
+
+Plane * D3DFactory::CreatePlane()
+{
+	int size = 16;
+	D3D12_HEAP_PROPERTIES heapProperties;
+	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapProperties.VisibleNodeMask = 1;
+	heapProperties.CreationNodeMask = 1;
+	D3D12_RESOURCE_DESC rDesc;
+	rDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	rDesc.Alignment = 0;
+	rDesc.Width = size * size;
+	rDesc.Height = 1;
+	rDesc.DepthOrArraySize = 1;
+	rDesc.MipLevels = 1;
+	rDesc.Format = DXGI_FORMAT_UNKNOWN;
+	rDesc.SampleDesc.Count = 1;
+	rDesc.SampleDesc.Quality = 0;
+	rDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	rDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	//= D3D12_RESOURCE_DESC{ , 0, size * size, 1, 1, 1, DXGI_FORMAT_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, D3D12_RESOURCE_FLAG_NONE };
+
+	ID3D12Resource* pCBUpload;
+	this->GetDevice()->CreateCommittedResource(
+		&heapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&rDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&pCBUpload));
+
+
+
+	ID3D12DescriptorHeap* pDHverts = this->CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc = D3D12_CONSTANT_BUFFER_VIEW_DESC{ m_pCBUpload->GetGPUVirtualAddress(), size * size };
+
+	this->GetDevice()->CreateConstantBufferView(
+		&cbDesc,
+		m_pDHverts->GetCPUDescriptorHandleForHeapStart()
+	);
+
+
+	D3D12_DESCRIPTOR_RANGE descriptorRange;
+	descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	descriptorRange.NumDescriptors = 1;
+	descriptorRange.BaseShaderRegister = 0;
+	descriptorRange.RegisterSpace = 0;
+	descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
+	m_DescriptorTable = D3D12_ROOT_DESCRIPTOR_TABLE{}
+}
+
