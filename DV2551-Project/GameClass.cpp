@@ -18,7 +18,7 @@ bool GameClass::Initialize(Window* pWindow)
 {
 	m_pD3DFactory = new D3DFactory();
 	
-	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);
+	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 3);
 
 	tempcq = m_pD3DFactory->CreateCQ(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
 
@@ -40,7 +40,7 @@ bool GameClass::Initialize(Window* pWindow)
 	descSwapChain.SampleDesc = descSample;
 	descSwapChain.Windowed = true;
 
-	m_pSwapChain = m_pD3DFactory->CreateSwapChain(&descSwapChain, tempcq);//m_pGraphicsHighway->GetCQ());
+	m_pSwapChain = m_pD3DFactory->CreateSwapChain(&descSwapChain, m_pGraphicsHighway->GetCQ());//m_pGraphicsHighway->GetCQ());
 	temphandle = CreateEvent(NULL, NULL, NULL, NULL);
 
 	//create rtvs and descriptor heap
@@ -164,9 +164,9 @@ void GameClass::Update(Input * input, double dDeltaTime)
 ID3D12GraphicsCommandList* GameClass::ClearBackBuffer()
 {
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	ID3D12GraphicsCommandList* pCL = tempcls[iFrameIndex];//m_pGraphicsHighway->GetFreshCL();
-	tempcas[iFrameIndex]->Reset();
-	pCL->Reset(tempcas[iFrameIndex], nullptr);
+	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
+	//tempcas[iFrameIndex]->Reset();
+	//pCL->Reset(tempcas[iFrameIndex], nullptr);
 
 	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
 	transition.pResource = m_ppRTV[iFrameIndex];
@@ -217,20 +217,12 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 	//m_pGraphicsHighway->ExecuteCQ();
 
 	pCL->Close();
-	ID3D12CommandList* ppcls[] = { pCL };
-	tempcq->ExecuteCommandLists(1, ppcls);
-	tempcq->Signal(tempFences[iFrameIndex], tempFencevalues[iFrameIndex]);
+	m_pGraphicsHighway->QueueCL(pCL);
+	int test = m_pGraphicsHighway->ExecuteCQ();
 
 	m_pSwapChain->Present(0, 0);
 
-	iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	if (tempFences[iFrameIndex]->GetCompletedValue() < tempFencevalues[iFrameIndex])
-	{
-		tempFences[iFrameIndex]->SetEventOnCompletion(tempFencevalues[iFrameIndex], temphandle);
-		WaitForSingleObject(temphandle, INFINITE);
-	}
-	tempFencevalues[iFrameIndex]++;
-
+	m_pGraphicsHighway->Wait(test);
 }
 
 void GameClass::Frame()

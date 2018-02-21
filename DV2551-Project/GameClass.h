@@ -31,7 +31,7 @@ private:
 
 
 	D3DFactory*						m_pD3DFactory;
-	//GPUHighway*						m_pGraphicsHighway;
+	GPUHighway*						m_pGraphicsHighway;
 
 
 	IDXGISwapChain3*				m_pSwapChain;
