@@ -3,17 +3,18 @@
 
 //TODO: move root constants/paramters etc to factory, 
 //		make a uploadHeap function in D3DFactory,
-//		make bonstantCuffer function in D3DFactory, which takes a vector<float4> and links to CS
+//		make bonstantCuffer function in D3DFactory, which takes a vector<float4> and links to ComputeShader
 //		createRS in D3DFactory
 
-BezierClass::BezierClass()
+BezierClass::BezierClass(/*D3DFactory* pFactory*/)
 {
-	//interact with D3DFactory
+	//m_pFactory = pFactory;
 }
 
 BezierClass::~BezierClass()
 {
 	m_pBezierVertices.clear();
+	//SAFE_RELEASE(m_pFactory);
 	//DELET THIS, hihi
 }
 
@@ -40,10 +41,10 @@ void BezierClass::DX12Highway()
 
 	//createRS()??
 
-	//------------------------------------------------
+	//------------------------------------------------move all above line to D3DFactory
+
 	CalculateBezierVertices();
-	//
-	//send m_pBezierVertices to D3DFactory to be send with bonstantCuffer
+	//m_pFactory->SetCBData(m_pBezierVertices); //send m_pBezierVertices to D3DFactory to be send with bonstantCuffer
 
 	m_pBezierVertices.clear();
 	return;

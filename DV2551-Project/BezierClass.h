@@ -16,7 +16,7 @@ class BezierClass
 {
 public:
 	//public functions
-	BezierClass();
+	BezierClass(/*D3DFactory* pFactory*/);
 	~BezierClass();
 	void DX12Highway();
 
@@ -27,4 +27,5 @@ private:
 
 	//private variables
 	std::vector<float4> m_pBezierVertices;
+	//D3DFactory* m_pFactory;
 };
