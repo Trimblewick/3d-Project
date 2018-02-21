@@ -8,6 +8,10 @@
 
 BezierClass::BezierClass(/**/)
 {
+}
+
+BezierClass::BezierClass(ID3D12DescriptorHeap * pDH, ID3D12Resource* pResource)
+{
 	float4 temp;
 	temp.x = 1.0f;
 	temp.y = 0.0f;
@@ -16,6 +20,9 @@ BezierClass::BezierClass(/**/)
 
 	m_pBezierVertices.push_back(temp);
 	m_pPreviouslyCalculatedBezierVertices.push_back(temp);
+
+	m_pConstantDescHeap = pDH;
+	m_pConstantUploadHeap = pResource;
 }
 
 BezierClass::~BezierClass()

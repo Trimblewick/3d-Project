@@ -3,6 +3,9 @@
 #include <d3dcompiler.h>
 #include <assert.h>
 
+//CB: Create descriptorHeap, 
+
+//Device (from D3DFactory needed for createCommitedResource, 
 struct float4
 {
 	float x;
@@ -15,7 +18,8 @@ class BezierClass
 {
 public:
 	//public functions
-	BezierClass(/**/);
+	BezierClass();
+	BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource* pResource);
 	~BezierClass();
 	void CalculateBezierVertices();
 	void bezierConstantBuffer(std::vector<float4> vertices);
@@ -30,4 +34,5 @@ private:
 
 	ID3D12DescriptorHeap*	m_pConstantDescHeap;
 	ID3D12Resource*			m_pConstantUploadHeap;
+	
 };

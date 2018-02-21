@@ -192,5 +192,41 @@ GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned
 
 BezierClass* D3DFactory::CreateBezier()
 {
-	return new BezierClass();
+	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	ID3D12Resource* pUploadCB = nullptr;
+
+	//Set resource desc
+	D3D12_RESOURCE_DESC resourceDesc;
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Alignment = 0;
+	resourceDesc.Width = 48000; //??
+	resourceDesc.Height = 1;	//??
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	//Set heap properties
+	D3D12_HEAP_PROPERTIES heapDesc;
+	heapDesc.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapDesc.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE;
+	heapDesc.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapDesc.CreationNodeMask = 1;
+	heapDesc.VisibleNodeMask = 1;
+
+
+	m_pDevice->CreateCommittedResource(
+		&heapDesc,
+		D3D12_HEAP_FLAG_NONE, 
+		&resourceDesc, 
+		D3D12_RESOURCE_STATE_GENERIC_READ, 
+		nullptr, 
+		IID_PPV_ARGS(&pUploadCB));
+
+	BezierClass* pB = new BezierClass(pDH, pUploadCB);
+	
+	return pB;
 }
