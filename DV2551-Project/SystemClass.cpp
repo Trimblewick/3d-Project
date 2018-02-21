@@ -45,7 +45,6 @@ SystemClass::SystemClass()
 	s_bRunning = false;
 	s_bInitialized = false;
 	s_fDeltaTime = 0.0f;
-	
 }
 
 SystemClass::~SystemClass()
@@ -64,7 +63,7 @@ bool SystemClass::Initialize(HINSTANCE hInstance, HINSTANCE hPrevInstance, int i
 	{
 		return false;
 	}
-	if (!s_game.Initialize())
+	if (!s_game.Initialize(&s_window))
 	{
 		return false;
 	}
@@ -118,9 +117,9 @@ void SystemClass::Run()
 
 			//basic flow
 			s_game.Update(&s_input, s_fDeltaTime);
-			s_game.ClearBackBuffer();
-			s_game.Frame();
-			s_game.PrecentBackBuffer();
+			//s_game.ClearBackBuffer();
+			//s_game.Frame();
+			//s_game.PrecentBackBuffer();
 
 			
 		}
