@@ -163,26 +163,21 @@ ID3DBlob * D3DFactory::CompileShader(LPCWSTR filePath, LPCSTR shadermodel)
 	return shaderBlob;
 }
 
-GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCLs, unsigned int iNumberOfFences)
+GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCLs)
 {
 	ID3D12CommandQueue* pCQ = CreateCQ(type);
 
 	ID3D12CommandAllocator** ppCAs = new ID3D12CommandAllocator*[iNumberOfCLs];
 	ID3D12GraphicsCommandList** ppCLs = new ID3D12GraphicsCommandList*[iNumberOfCLs];
-
-	ID3D12Fence** ppFences = new ID3D12Fence*[iNumberOfFences];
-	
+	ID3D12Fence** ppFences = new ID3D12Fence*[iNumberOfCLs];
 
 	for (int i = 0; i < iNumberOfCLs; ++i)
 	{
 		ppCAs[i] = CreateCA(type);
 		ppCLs[i] = CreateCL(ppCAs[i], type);
 		DxAssert(ppCLs[i]->Close());
-	}
-	for (int i = 0; i < iNumberOfFences; ++i)
-	{
 		ppFences[i] = CreateFence();
 	}
 
-	return new GPUHighway(type, pCQ, ppCAs, ppCLs, iNumberOfCLs, ppFences, iNumberOfFences);
+	return new GPUHighway(type, pCQ, ppCAs, ppCLs, ppFences, iNumberOfCLs);
 }

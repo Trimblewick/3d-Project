@@ -17,7 +17,7 @@ public:
 	void							CleanUp();
 
 	void							Update(Input* input, double dDeltaTime);
-	ID3D12GraphicsCommandList*							ClearBackBuffer();
+	ID3D12GraphicsCommandList*		ClearBackBuffer();
 	void							PrecentBackBuffer(ID3D12GraphicsCommandList* pCL);
 	void							Frame();
 
@@ -40,14 +40,6 @@ private:
 
 	ID3D12RootSignature*			tempRS;
 	ID3D12PipelineState*			tempPSO;
-	ID3D12CommandQueue*				tempcq;
-
-	ID3D12CommandAllocator*			tempcas[m_iBackBufferCount];
-	ID3D12GraphicsCommandList*		tempcls[m_iBackBufferCount];
-	ID3D12Fence*					tempFences[m_iBackBufferCount];
-	size_t							tempFencevalues[m_iBackBufferCount];
-	HANDLE							temphandle;
-
 
 	D3D12_VIEWPORT						m_viewport;
 	D3D12_RECT							m_rectScissor;

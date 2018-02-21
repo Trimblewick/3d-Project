@@ -18,9 +18,7 @@ bool GameClass::Initialize(Window* pWindow)
 {
 	m_pD3DFactory = new D3DFactory();
 	
-	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 3);
-
-	tempcq = m_pD3DFactory->CreateCQ(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
+	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount);
 
 	//set up swapchain with the graphics highway
 	DXGI_MODE_DESC descMode = {};
@@ -41,7 +39,6 @@ bool GameClass::Initialize(Window* pWindow)
 	descSwapChain.Windowed = true;
 
 	m_pSwapChain = m_pD3DFactory->CreateSwapChain(&descSwapChain, m_pGraphicsHighway->GetCQ());//m_pGraphicsHighway->GetCQ());
-	temphandle = CreateEvent(NULL, NULL, NULL, NULL);
 
 	//create rtvs and descriptor heap
 	m_pDHRTV = m_pD3DFactory->CreateDH(m_iBackBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
@@ -120,15 +117,6 @@ bool GameClass::Initialize(Window* pWindow)
 	SAFE_RELEASE(pVSblob);
 	SAFE_RELEASE(pPSblob);
 
-	for (int i = 0; i < m_iBackBufferCount; ++i)
-	{
-		tempcas[i] = m_pD3DFactory->CreateCA(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
-		tempFences[i] = m_pD3DFactory->CreateFence();
-		tempcls[i] = m_pD3DFactory->CreateCL(tempcas[i], D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
-		tempFencevalues[i] = 0;
-		tempcls[i]->Close();
-	}
-
 	m_viewport.TopLeftX = 0;
 	m_viewport.TopLeftY = 0;
 	m_viewport.Width = pWindow->GetWidth();
@@ -151,7 +139,21 @@ void GameClass::CleanUp()
 		delete m_pD3DFactory;
 		m_pD3DFactory = nullptr;
 	}
+	if (m_pGraphicsHighway)
+	{
+		delete m_pGraphicsHighway;
+		m_pGraphicsHighway = nullptr;
+	}
 
+	SAFE_RELEASE(m_pSwapChain);
+	
+	for (int i = 0; i < m_iBackBufferCount; ++i)
+	{
+		SAFE_RELEASE(m_ppRTV[i]);
+	}
+	SAFE_RELEASE(m_pDHRTV);
+	SAFE_RELEASE(tempPSO);
+	SAFE_RELEASE(tempRS);
 }
 
 void GameClass::Update(Input * input, double dDeltaTime)
@@ -211,17 +213,13 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 
 
 	pCL->ResourceBarrier(1, &barrierTransition);
-	//pCL->Close();
-
-	//m_pGraphicsHighway->QueueCL(pCL);
-	//m_pGraphicsHighway->ExecuteCQ();
-
 	pCL->Close();
+
 	m_pGraphicsHighway->QueueCL(pCL);
 	int test = m_pGraphicsHighway->ExecuteCQ();
+	
 
 	m_pSwapChain->Present(0, 0);
-
 	m_pGraphicsHighway->Wait(test);
 }
 

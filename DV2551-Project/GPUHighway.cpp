@@ -2,14 +2,8 @@
 #include "GPUHighway.h"
 
 
-GPUHighway::GPUHighway(
-	D3D12_COMMAND_LIST_TYPE			type, 
-	ID3D12CommandQueue*				pCQ, 
-	ID3D12CommandAllocator**		ppCAs,
-	ID3D12GraphicsCommandList**		ppCLs, 
-	unsigned int					iNumberOfCLs, 
-	ID3D12Fence**					ppFences,
-	unsigned int					iNumberOfFences)
+GPUHighway::GPUHighway(D3D12_COMMAND_LIST_TYPE type, ID3D12CommandQueue* pCQ, ID3D12CommandAllocator** ppCAs,
+	ID3D12GraphicsCommandList** ppCLs, ID3D12Fence** ppFences, unsigned int iNumberOfCLs)
 {
 	m_type = type;
 	m_pCQ = pCQ;
@@ -17,44 +11,40 @@ GPUHighway::GPUHighway(
 	m_iNumberOfCLs = iNumberOfCLs;
 	m_ppCAs = ppCAs;
 	m_ppCLs = ppCLs;
+	m_ppFences = ppFences;
 	m_ppCLQ = new std::vector<ID3D12CommandList*>[iNumberOfCLs];
 	m_pIndexCLQ = new std::vector<unsigned int>[iNumberOfCLs];
 	m_pCLLock = new int[iNumberOfCLs];
+	m_pFenceValues = new size_t[iNumberOfCLs];
+	m_pFenceLocked = new bool[iNumberOfCLs];
+
 	for (int i = 0; i < iNumberOfCLs; ++i)
 	{
 		m_pCLLock[i] = i;
-	}
-
-	m_iNumberOfFences = iNumberOfFences;
-
-	m_handleFence = CreateEvent(NULL, NULL, NULL, NULL);
-	m_ppFences = ppFences;
-
-	m_pFenceValues = new size_t[iNumberOfFences];
-	m_pFenceLocked = new bool[iNumberOfFences];
-	for (int i = 0; i < iNumberOfFences; ++i)
-	{
 		m_pFenceValues[i] = 0;
 		m_pFenceLocked[i] = false;
 	}
+
+	m_handleFence = CreateEvent(NULL, NULL, NULL, NULL);
 }
 
 GPUHighway::~GPUHighway()
 {
 	WaitForAllFences();
 
-	delete m_pFenceValues;
-	delete m_pFenceLocked;
-
-	for (int i = 0; i < m_iNumberOfFences; ++i)
-	{
-		SAFE_RELEASE(m_ppFences[i]);
-	}
 	for (int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		SAFE_RELEASE(m_ppCAs[i]);
-		SAFE_RELEASE(m_ppCLs[i])
+		SAFE_RELEASE(m_ppCLs[i]);
+		SAFE_RELEASE(m_ppFences[i]);
 	}
+	SAFE_RELEASE(m_pCQ);
+
+	delete m_pCLLock;
+	delete m_pFenceValues;
+	delete m_pFenceLocked;
+	delete[] m_pIndexCLQ;
+	delete[] m_ppCLQ;
 }
 
 ID3D12CommandQueue* GPUHighway::GetCQ()
@@ -75,12 +65,13 @@ void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 	}
 	assert(iLock > -1);//cant be queued in this highway
 
-	for (int i = 0; i < m_iNumberOfFences; ++i)
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (!m_pFenceLocked[i])
 		{
 			m_ppCLQ[i].push_back(pCL);
 			m_pIndexCLQ->push_back(iLock);
+			break;
 		}
 	}
 }
@@ -105,7 +96,7 @@ ID3D12GraphicsCommandList* GPUHighway::GetFreshCL()
 int GPUHighway::ExecuteCQ()
 {
 	int index = -1;
-	for (int i = 0; i < m_iNumberOfFences; ++i)
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (!m_pFenceLocked[i])
 		{
@@ -114,7 +105,7 @@ int GPUHighway::ExecuteCQ()
 		}
 	}
 	
-	for (int i = 0; i < m_iNumberOfFences; ++i)
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (!m_pFenceLocked[i])
 		{
@@ -150,7 +141,7 @@ void GPUHighway::Wait(int index)
 
 void GPUHighway::WaitForAllFences()
 {
-	for (int i = 0; i < m_iNumberOfFences; ++i)
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (m_pFenceLocked[i])
 		{
