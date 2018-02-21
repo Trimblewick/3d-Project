@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -23,7 +23,7 @@
     <ProjectGuid>{2DF71EC8-CA06-4250-BEE2-4FCE6FED3EC5}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>DV2551Project</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.15063.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -150,16 +150,19 @@
     <ClInclude Include="D3DFactory.h" />
     <ClInclude Include="GameClass.h" />
     <ClInclude Include="GPUHighway.h" />
+    <ClInclude Include="Plane.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="SystemClass.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="VertexBuffer.h" />
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="D3DFactory.cpp" />
     <ClCompile Include="GameClass.cpp" />
     <ClCompile Include="GPUHighway.cpp" />
+    <ClCompile Include="Plane.cpp" />
     <ClCompile Include="Input.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="stdafx.cpp">
