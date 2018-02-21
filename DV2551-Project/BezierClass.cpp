@@ -2,59 +2,48 @@
 #include "BezierClass.h"
 
 //TODO: move root constants/paramters etc to factory, 
-//		make a uploadHeap function in D3DFactory,
-//		make bonstantCuffer function in D3DFactory, which takes a vector<float4> and links to ComputeShader
-//		createRS in D3DFactory
+//		make a uploadHeap/bonstantCuffer? function here that sends m_pBezierVertices to GPU to be used for offset calc,
+//		fill RootSig in D3DFactory
+//		set PSO in D3DFactory
 
 BezierClass::BezierClass(/*D3DFactory* pFactory*/)
 {
-	//m_pFactory = pFactory;
+	float4 temp;
+	temp.x = 1.0f;
+	temp.y = 0.0f;
+	temp.z = 0.0f;
+	temp.w = 0.0f;
+
+	m_pBezierVertices.push_back(temp);
+	m_pPreviouslyCalculatedBezierVertices.push_back(temp);
 }
 
 BezierClass::~BezierClass()
 {
 	m_pBezierVertices.clear();
-	//SAFE_RELEASE(m_pFactory);
+	m_pPreviouslyCalculatedBezierVertices.clear();
 	//DELET THIS, hihi
 }
 
-//Sends data calculated in BezierClass to D3DFactory to be bound in constantbuffers
-void BezierClass::DX12Highway()
+void BezierClass::uploadVertices(std::vector<float4> vertices)
 {
-	//fill root desc, create input and register spaces etc..
-
-	//Create one rp for the color root constant
-	D3D12_ROOT_PARAMETER rp[1];
-
-	//Color
-	D3D12_ROOT_CONSTANTS colorConstant;
-	colorConstant.Num32BitValues = 4;
-	colorConstant.ShaderRegister = 0; //set color as b0?
-	colorConstant.RegisterSpace = 0;
-
-	rp[0].Constants = colorConstant;
-	rp[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	rp[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
-	//commandList->SetGraphicsRoot32BitConstants(color etc..);
-	//commandList->DrawInstanced();
-
-	//createRS()??
-
-	//------------------------------------------------move all above line to D3DFactory
-
-	CalculateBezierVertices();
-	//m_pFactory->SetCBData(m_pBezierVertices); //send m_pBezierVertices to D3DFactory to be send with bonstantCuffer
-
-	m_pBezierVertices.clear();
-	return;
+	//upload calculated vertices to gpu, will be called from GameClass every frame
 }
 
 void BezierClass::CalculateBezierVertices()
 {
-	//Calculate bézier vertices 
+	int nrOfVertices = 1; //temp, set to number of vertices so we can loop for each vertex and calculate bezier offset
 
-	//m_pBezierVertices.push_back(calculated vertices)
-	
+	for (int i = 0; i < nrOfVertices; i++)
+	{
+		//Change line below to actual Bézier calculationusing previous frame's bezier point
+		float4 previousBezierWithOffset = m_pPreviouslyCalculatedBezierVertices[i]; //previousBezierWithOffset will be m_pPreviouslyCalculatedBezierVertices[i] with an offset
+
+		m_pBezierVertices.push_back(previousBezierWithOffset);
+		m_pPreviouslyCalculatedBezierVertices[i] = previousBezierWithOffset; //update for next frame
+	}
+
+	uploadVertices(m_pBezierVertices);
+	m_pPreviouslyCalculatedBezierVertices = m_pBezierVertices;
 	return;
 }

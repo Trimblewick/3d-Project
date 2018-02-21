@@ -2,7 +2,6 @@
 #include <d3d12.h>
 #include <d3dcompiler.h>
 #include <assert.h>
-#include "D3DFactory.h"
 
 struct float4
 {
@@ -16,16 +15,16 @@ class BezierClass
 {
 public:
 	//public functions
-	BezierClass(/*D3DFactory* pFactory*/);
+	BezierClass();
 	~BezierClass();
-	void DX12Highway();
+	void CalculateBezierVertices();
+	void uploadVertices(std::vector<float4> vertices);
 
 private:
 	//private functions
-	void CalculateBezierVertices();
 	
 
 	//private variables
 	std::vector<float4> m_pBezierVertices;
-	//D3DFactory* m_pFactory;
+	std::vector<float4> m_pPreviouslyCalculatedBezierVertices;
 };

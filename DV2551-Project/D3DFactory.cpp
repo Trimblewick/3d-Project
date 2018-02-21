@@ -189,3 +189,8 @@ GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned
 
 	return new GPUHighway(type, pCQ, ppCAs.data(), ppFences.data(), iNumberOfCAs, ppCLs.data(), iNumberOfCLs);
 }
+
+BezierClass* D3DFactory::CreateBezier()
+{
+	return new BezierClass();
+}

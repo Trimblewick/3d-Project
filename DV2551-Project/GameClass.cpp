@@ -17,7 +17,9 @@ GameClass::~GameClass()
 bool GameClass::Initialize(Window* pWindow)
 {
 	m_pD3DFactory = new D3DFactory();
-	
+	m_pBezierClass = m_pD3DFactory->CreateBezier();
+	m_pBezierClass->CalculateBezierVertices();
+
 	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);
 
 	tempcq = m_pD3DFactory->CreateCQ(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
@@ -151,12 +153,18 @@ void GameClass::CleanUp()
 		delete m_pD3DFactory;
 		m_pD3DFactory = nullptr;
 	}
+	if (m_pBezierClass)
+	{
+		delete m_pBezierClass;
+		m_pBezierClass = nullptr;
+	}
 
 }
 
 void GameClass::Update(Input * input, double dDeltaTime)
 {
 	m_dDeltaTime = dDeltaTime;
+	m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
 	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
 	PrecentBackBuffer(pCLtest);
 }
