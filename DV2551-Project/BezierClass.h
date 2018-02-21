@@ -15,16 +15,19 @@ class BezierClass
 {
 public:
 	//public functions
-	BezierClass();
+	BezierClass(/**/);
 	~BezierClass();
 	void CalculateBezierVertices();
-	void uploadVertices(std::vector<float4> vertices);
+	void bezierConstantBuffer(std::vector<float4> vertices);
 
 private:
 	//private functions
 	
 
 	//private variables
-	std::vector<float4> m_pBezierVertices;
-	std::vector<float4> m_pPreviouslyCalculatedBezierVertices;
+	std::vector<float4>		m_pBezierVertices;
+	std::vector<float4>		m_pPreviouslyCalculatedBezierVertices;
+
+	ID3D12DescriptorHeap*	m_pConstantDescHeap;
+	ID3D12Resource*			m_pConstantUploadHeap;
 };
