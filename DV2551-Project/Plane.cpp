@@ -1,32 +1,29 @@
 #include "stdafx.h"
 #include "Plane.h"
 
-Plane::Plane(unsigned int size, ID3D12DescriptorHeap* pDHverts, ID3D12Resource* pCBUpload, D3D12_ROOT_DESCRIPTOR_TABLE* pDescriptorTable)
+Plane::Plane(unsigned int tileSize, ID3D12Resource * pVBuffer, D3D12_VERTEX_BUFFER_VIEW vertexBufferView)
 {
-	m_uiSize = size;
-	m_ppVerts.reserve(size * size);
-	m_pDHverts = pDHverts;
-	m_pCBUpload = pCBUpload;
-	m_pDescriptorTable = pDescriptorTable;
+	m_uiSize = tileSize;
+	m_pVerts.reserve(m_uiSize * m_uiSize);
+	m_pVBuffer = pVBuffer;
+	m_vertexBufferView = vertexBufferView;
 
-	for (unsigned int i = 0; i < size; ++i)
+	for (unsigned int i = 0; i < m_uiSize; ++i)
 	{
-		for (unsigned int j = 0; j < size; ++j)
+		for (unsigned int j = 0; j < m_uiSize; ++j)
 		{
-			m_ppVerts.push_back(float4{ i, j, 0, 1 });
+			m_pVerts.push_back(float4{ (float)i, (float)j, 0, 1 });
 		}
 	}
 
-	
 }
 
 Plane::~Plane()
 {
-	SAFE_RELEASE(m_pDHverts);
-	SAFE_RELEASE(m_pCBUpload);
 }
 
-void Plane::bind(ID3D12GraphicsCommandList* pCL, int iParameterIndex)
+void Plane::bind(ID3D12GraphicsCommandList* pCL)
 {
-	pCL->SetGraphicsRootShaderResourceView(iParameterIndex, m_pCBUpload->GetGPUVirtualAddress());
+	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	pCL->IASetVertexBuffers(0, 1, &m_vertexBufferView);
 }

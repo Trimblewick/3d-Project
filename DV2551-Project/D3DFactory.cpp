@@ -190,57 +190,163 @@ GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned
 	return new GPUHighway(type, pCQ, ppCAs.data(), ppFences.data(), iNumberOfCAs, ppCLs.data(), iNumberOfCLs);
 }
 
-Plane * D3DFactory::CreatePlane()
+Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 {
 	int size = 16;
+
+	struct Vertex
+	{
+		float4 position;
+		float4 color;
+	};
+	Vertex vList[] = {
+		{ -0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f },
+		{ 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f },
+		{ -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f },
+		{ 0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f }
+	};
+	int vBufferSize = sizeof(vList);
+
 	D3D12_HEAP_PROPERTIES heapProperties;
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
 	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 	heapProperties.VisibleNodeMask = 1;
 	heapProperties.CreationNodeMask = 1;
-	D3D12_RESOURCE_DESC rDesc;
-	rDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	rDesc.Alignment = 0;
-	rDesc.Width = size * size;
-	rDesc.Height = 1;
-	rDesc.DepthOrArraySize = 1;
-	rDesc.MipLevels = 1;
-	rDesc.Format = DXGI_FORMAT_UNKNOWN;
-	rDesc.SampleDesc.Count = 1;
-	rDesc.SampleDesc.Quality = 0;
-	rDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	rDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
-	//= D3D12_RESOURCE_DESC{ , 0, size * size, 1, 1, 1, DXGI_FORMAT_UNKNOWN, 1, 0, D3D12_TEXTURE_LAYOUT_ROW_MAJOR, D3D12_RESOURCE_FLAG_NONE };
 
-	ID3D12Resource* pCBUpload;
+	D3D12_RESOURCE_DESC bufferDesc;
+	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	bufferDesc.Alignment = 0;
+	bufferDesc.Width = vBufferSize; //Bytes!
+	bufferDesc.Height = 1;
+	bufferDesc.DepthOrArraySize = 1;
+	bufferDesc.MipLevels = 1;
+	bufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+	bufferDesc.SampleDesc.Count = 1;
+	bufferDesc.SampleDesc.Quality = 0;
+	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	ID3D12Resource* pVBuffer;
 	this->GetDevice()->CreateCommittedResource(
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
-		&rDesc,
+		&bufferDesc,
 		D3D12_RESOURCE_STATE_GENERIC_READ,
 		nullptr,
-		IID_PPV_ARGS(&pCBUpload));
+		IID_PPV_ARGS(&pVBuffer));
 
+	pVBuffer->SetName(L"Vulles Dank:a Task"); //TODO: rename if kept, lol
 
+	D3D12_HEAP_PROPERTIES uploadHeapProperties;
+	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	uploadHeapProperties.VisibleNodeMask = 1;
+	uploadHeapProperties.CreationNodeMask = 1;
 
-	ID3D12DescriptorHeap* pDHverts = this->CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	D3D12_RESOURCE_DESC uploadDesc;
+	uploadDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	uploadDesc.Alignment = 0;
+	uploadDesc.Width = vBufferSize; //Bytes!
+	uploadDesc.Height = 1;
+	uploadDesc.DepthOrArraySize = 1;
+	uploadDesc.MipLevels = 1;
+	uploadDesc.Format = DXGI_FORMAT_UNKNOWN;
+	uploadDesc.SampleDesc.Count = 1;
+	uploadDesc.SampleDesc.Quality = 0;
+	uploadDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	uploadDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-	D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc = D3D12_CONSTANT_BUFFER_VIEW_DESC{ m_pCBUpload->GetGPUVirtualAddress(), size * size };
+	ID3D12Resource* pVBUpload;
+	this->GetDevice()->CreateCommittedResource(
+		&uploadHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&uploadDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&pVBUpload));
 
-	this->GetDevice()->CreateConstantBufferView(
-		&cbDesc,
-		m_pDHverts->GetCPUDescriptorHandleForHeapStart()
-	);
+	pVBUpload->SetName(L"Vulles Dank:a Upload Heap");
 
+	D3D12_SUBRESOURCE_DATA vertexData = {};
+	vertexData.pData = reinterpret_cast<BYTE*>(vList);
+	vertexData.RowPitch = vBufferSize;
+	vertexData.SlicePitch = vBufferSize; //both are supposed to be size in bytes of all triangles...
 
-	D3D12_DESCRIPTOR_RANGE descriptorRange;
-	descriptorRange.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
-	descriptorRange.NumDescriptors = 1;
-	descriptorRange.BaseShaderRegister = 0;
-	descriptorRange.RegisterSpace = 0;
-	descriptorRange.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	UINT64 RequiredSize = 0;
+	UINT64 MemToAlloc = static_cast<UINT64>(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64)) * 1; //1 subresource
+	if (MemToAlloc > SIZE_MAX)
+	{
+		return 0;
+	}
+	void* pMem = HeapAlloc(GetProcessHeap(), 0, static_cast<SIZE_T>(MemToAlloc));
+	if (pMem == NULL)
+	{
+		return 0;
+	}
+	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts = reinterpret_cast<D3D12_PLACED_SUBRESOURCE_FOOTPRINT*>(pMem);
+	UINT64* pRowSizesInBytes = reinterpret_cast<UINT64*>(pLayouts + 1); //1 subresource
+	UINT* pNumRows = reinterpret_cast<UINT*>(pRowSizesInBytes + 1); //1 subresource
+	//pVBuffer is dest.
+	ID3D12Device* pDevice;
+	pVBuffer->GetDevice(__uuidof(*pDevice), reinterpret_cast<void**>(&pDevice));
+	//TODO: testa om behövs
+	pDevice->GetCopyableFootprints(&bufferDesc, 0/*First subresource*/, 1/*1 subresource*/, 0/*Intermediate (upload heap) offset*/, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
+	pDevice->Release();
 
-	m_DescriptorTable = D3D12_ROOT_DESCRIPTOR_TABLE{}
+	/*if (uploadDesc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER ||
+		uploadDesc.Width < RequiredSize + pLayouts[0].Offset ||
+		RequiredSize >(SIZE_T) - 1 ||
+		(bufferDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER &&
+		(FirstSubresource != 0 || NumSubresources != 1)))
+	{
+		return 0;
+	}*/
+
+	/*BYTE* pData;
+	HRESULT hr = pIntermediate->Map(0, NULL, reinterpret_cast<void**>(&pData));
+	if (FAILED(hr))
+	{
+		return 0;
+	}*/
+	UINT NumSubresources = 1;
+	for (UINT i = 0; i < NumSubresources; ++i)
+	{
+		if (pRowSizesInBytes[i] >(SIZE_T)-1) return 0;
+		D3D12_MEMCPY_DEST DestData = { &vertexData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, pLayouts[i].Footprint.RowPitch * pNumRows[i] };
+		//MemcpySubresource(&DestData, &pSrcData[i]/*vertexData*/, (SIZE_T)pRowSizesInBytes[i]/*rowsizeinbytes*/, pNumRows[i]/*rows*/, pLayouts[i].Footprint.Depth /*slices*/);
+		for (UINT z = 0; z < pLayouts[i].Footprint.Depth; ++z)
+		{
+			BYTE* pDestSlice = reinterpret_cast<BYTE*>(DestData.pData) + DestData.SlicePitch * z;
+			const BYTE* pSrcSlice = reinterpret_cast<const BYTE*>(vertexData.pData) + vertexData.SlicePitch * z;
+			for (UINT y = 0; y < pNumRows[i]; ++y)
+			{
+				memcpy(pDestSlice + DestData.RowPitch * y,
+					pSrcSlice + vertexData.RowPitch * y,
+					(SIZE_T)pRowSizesInBytes[i]);
+			}
+		}
+	}
+	pVBUpload->Unmap(0, NULL);
+
+	D3D12_BOX SrcBox;
+	SrcBox.left = UINT(pLayouts[0].Offset);
+	SrcBox.right = UINT(pLayouts[0].Offset + pLayouts[0].Footprint.Width);
+	SrcBox.top = 0;
+	SrcBox.front = 0;
+	SrcBox.bottom = 1;
+	SrcBox.back = 1;
+	pCmdList->CopyBufferRegion(pVBuffer, 0, pVBUpload, pLayouts[0].Offset, pLayouts[0].Footprint.Width);
+
+	D3D12_VERTEX_BUFFER_VIEW vbView;
+	vbView.BufferLocation = pVBuffer->GetGPUVirtualAddress();
+	vbView.StrideInBytes = sizeof(Vertex);
+	vbView.SizeInBytes = vBufferSize;
+	
+
+	return new Plane(16, pVBuffer, vbView);
+	//ID3D12DescriptorHeap* pDHverts = this->CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+
 }
 

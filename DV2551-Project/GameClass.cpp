@@ -188,7 +188,7 @@ ID3D12GraphicsCommandList* GameClass::ClearBackBuffer()
 	return pCL;
 }
 
-
+bool waduheck = false;
 void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 {
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
@@ -198,9 +198,18 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 	pCL->RSSetViewports(1, &m_viewport);
 	pCL->RSSetScissorRects(1, &m_rectScissor);
 	pCL->SetPipelineState(tempPSO);
-	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	pCL->DrawInstanced(3, 1, 0, 0);
-
+	if (!waduheck)
+	{
+		waduheck = true;
+		m_pPlane = m_pD3DFactory->CreatePlane(pCL);
+	
+		pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+		pCL->DrawInstanced(3, 1, 0, 0);
+	}
+	else
+	{
+		m_pPlane->bind(pCL);
+	}
 	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
 	transition.pResource = m_ppRTV[iFrameIndex];
 	transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET; 	

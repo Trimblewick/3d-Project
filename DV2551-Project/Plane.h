@@ -2,24 +2,30 @@
 #include <vector>
 #include <d3d12.h>
 
-struct float4
-{
-	float x, y, z, w;
-};
+typedef union {
+	struct { float x, y, z, w; };
+	struct { float r, g, b, a; };
+} float4;
 
 class Plane
 {
 public:
-	Plane(unsigned int size, ID3D12DescriptorHeap* pDHverts, ID3D12Resource* pCBUpload, D3D12_ROOT_DESCRIPTOR_TABLE* pDescriptorTable);
+	Plane(unsigned int tileSize, ID3D12Resource* pVBuffer, D3D12_VERTEX_BUFFER_VIEW vertexBufferView);
 	~Plane();
 
-	void bind(ID3D12GraphicsCommandList* pCL, int iParameterIndex);
+	void bind(ID3D12GraphicsCommandList* pCL);
 
 private:
 	unsigned int					m_uiSize;
-	std::vector<float4>				m_ppVerts;
+	std::vector<float4>				m_pVerts;
 
 	ID3D12DescriptorHeap*			m_pDHverts;
-	ID3D12Resource*					m_pCBUpload;
+	ID3D12Resource*					m_pVBuffer;
 	D3D12_ROOT_DESCRIPTOR_TABLE*	m_pDescriptorTable;
+
+	ID3D12Resource*					m_pVertexBuffer;
+	ID3D12Resource*					m_pIndexBuffer;
+
+	D3D12_VERTEX_BUFFER_VIEW		m_vertexBufferView;
+	D3D12_INDEX_BUFFER_VIEW			m_indexBufferView;
 };

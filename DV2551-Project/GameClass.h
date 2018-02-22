@@ -5,6 +5,7 @@
 #include "GPUHighway.h"
 #include "Window.h"
 
+
 class GameClass
 {
 private:
@@ -20,7 +21,6 @@ public:
 	ID3D12GraphicsCommandList*							ClearBackBuffer();
 	void							PrecentBackBuffer(ID3D12GraphicsCommandList* pCL);
 	void							Frame();
-
 
 	
 
@@ -47,7 +47,7 @@ private:
 	ID3D12Fence*					tempFences[m_iBackBufferCount];
 	size_t							tempFencevalues[m_iBackBufferCount];
 	HANDLE							temphandle;
-
+	Plane*							m_pPlane;
 
 	D3D12_VIEWPORT						m_viewport;
 	D3D12_RECT							m_rectScissor;
