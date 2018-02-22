@@ -32,7 +32,7 @@ private:
 
 	D3DFactory*						m_pD3DFactory;
 	GPUHighway*						m_pGraphicsHighway;
-
+	Camera*							m_pCamera;
 
 	IDXGISwapChain3*				m_pSwapChain;
 	ID3D12Resource*					m_ppRTV[m_iBackBufferCount];

@@ -129,6 +129,8 @@ bool GameClass::Initialize(Window* pWindow)
 	m_rectScissor.right = (long)pWindow->GetWidth();
 	m_rectScissor.bottom = (long)pWindow->GetHeight();
 
+	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
+
 	return true;
 }
 
@@ -144,7 +146,11 @@ void GameClass::CleanUp()
 		delete m_pGraphicsHighway;
 		m_pGraphicsHighway = nullptr;
 	}
-
+	if (m_pCamera)
+	{
+		delete m_pCamera;
+		m_pCamera = nullptr;
+	}
 	SAFE_RELEASE(m_pSwapChain);
 	
 	for (int i = 0; i < m_iBackBufferCount; ++i)
@@ -167,8 +173,6 @@ ID3D12GraphicsCommandList* GameClass::ClearBackBuffer()
 {
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
-	//tempcas[iFrameIndex]->Reset();
-	//pCL->Reset(tempcas[iFrameIndex], nullptr);
 
 	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
 	transition.pResource = m_ppRTV[iFrameIndex];
@@ -196,8 +200,7 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 
 	pCL->SetGraphicsRootSignature(tempRS);
 
-	pCL->RSSetViewports(1, &m_viewport);
-	pCL->RSSetScissorRects(1, &m_rectScissor);
+	m_pCamera->BindCamera(pCL, iFrameIndex);
 	pCL->SetPipelineState(tempPSO);
 	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCL->DrawInstanced(3, 1, 0, 0);
@@ -210,7 +213,6 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 	D3D12_RESOURCE_BARRIER barrierTransition = {};
 	barrierTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrierTransition.Transition = transition;
-
 
 	pCL->ResourceBarrier(1, &barrierTransition);
 	pCL->Close();

@@ -147,6 +147,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="D3DFactory.h" />
     <ClInclude Include="GameClass.h" />
     <ClInclude Include="GPUHighway.h" />
@@ -157,6 +158,7 @@
     <ClInclude Include="Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="D3DFactory.cpp" />
     <ClCompile Include="GameClass.cpp" />
     <ClCompile Include="GPUHighway.cpp" />

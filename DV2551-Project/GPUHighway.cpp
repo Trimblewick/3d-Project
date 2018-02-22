@@ -40,6 +40,9 @@ GPUHighway::~GPUHighway()
 	}
 	SAFE_RELEASE(m_pCQ);
 
+	delete[] m_ppCLs;
+	delete[] m_ppCAs;
+	delete[] m_ppFences;
 	delete m_pCLLock;
 	delete m_pFenceValues;
 	delete m_pFenceLocked;
