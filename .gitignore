@@ -1,5 +1,5 @@
-*.vcxproj
-*.vcxproj.filters
+#*.vcxproj
+#*.vcxproj.filters
 *.db
 *.opendb
 *.obj
