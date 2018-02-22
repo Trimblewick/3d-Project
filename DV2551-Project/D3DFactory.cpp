@@ -275,7 +275,11 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	vertexData.SlicePitch = vBufferSize; //both are supposed to be size in bytes of all triangles...
 
 	UINT64 RequiredSize = 0;
-	UINT64 MemToAlloc = static_cast<UINT64>(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64)) * 1; //1 subresource
+	UINT NumSubresources = 1;
+	UINT FirstSubresource = 0;
+	UINT64 IntermediateOffset = 0;
+
+	UINT64 MemToAlloc = static_cast<UINT64>(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64)) * NumSubresources;
 	if (MemToAlloc > SIZE_MAX)
 	{
 		return 0;
@@ -286,36 +290,33 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 		return 0;
 	}
 	D3D12_PLACED_SUBRESOURCE_FOOTPRINT* pLayouts = reinterpret_cast<D3D12_PLACED_SUBRESOURCE_FOOTPRINT*>(pMem);
-	UINT64* pRowSizesInBytes = reinterpret_cast<UINT64*>(pLayouts + 1); //1 subresource
-	UINT* pNumRows = reinterpret_cast<UINT*>(pRowSizesInBytes + 1); //1 subresource
+	UINT64* pRowSizesInBytes = reinterpret_cast<UINT64*>(pLayouts + NumSubresources);
+	UINT* pNumRows = reinterpret_cast<UINT*>(pRowSizesInBytes + NumSubresources);
 	//pVBuffer is dest.
 	ID3D12Device* pDevice;
 	pVBuffer->GetDevice(__uuidof(*pDevice), reinterpret_cast<void**>(&pDevice));
-	//TODO: testa om behövs
-	pDevice->GetCopyableFootprints(&bufferDesc, 0/*First subresource*/, 1/*1 subresource*/, 0/*Intermediate (upload heap) offset*/, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
+	pDevice->GetCopyableFootprints(&bufferDesc, FirstSubresource, NumSubresources, IntermediateOffset, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
 	pDevice->Release();
 
-	/*if (uploadDesc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER ||
+	if (uploadDesc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER ||
 		uploadDesc.Width < RequiredSize + pLayouts[0].Offset ||
 		RequiredSize >(SIZE_T) - 1 ||
 		(bufferDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER &&
 		(FirstSubresource != 0 || NumSubresources != 1)))
 	{
 		return 0;
-	}*/
+	}
 
-	/*BYTE* pData;
-	HRESULT hr = pIntermediate->Map(0, NULL, reinterpret_cast<void**>(&pData));
+	BYTE* pData;
+	HRESULT hr = pVBUpload->Map(0, NULL, reinterpret_cast<void**>(&pData));
 	if (FAILED(hr))
 	{
 		return 0;
-	}*/
-	UINT NumSubresources = 1;
+	}
 	for (UINT i = 0; i < NumSubresources; ++i)
 	{
-		if (pRowSizesInBytes[i] >(SIZE_T)-1) return 0;
+		if (pRowSizesInBytes[i] > (SIZE_T)-1) return 0;
 		D3D12_MEMCPY_DEST DestData = { &vertexData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, pLayouts[i].Footprint.RowPitch * pNumRows[i] };
-		//MemcpySubresource(&DestData, &pSrcData[i]/*vertexData*/, (SIZE_T)pRowSizesInBytes[i]/*rowsizeinbytes*/, pNumRows[i]/*rows*/, pLayouts[i].Footprint.Depth /*slices*/);
 		for (UINT z = 0; z < pLayouts[i].Footprint.Depth; ++z)
 		{
 			BYTE* pDestSlice = reinterpret_cast<BYTE*>(DestData.pData) + DestData.SlicePitch * z;
