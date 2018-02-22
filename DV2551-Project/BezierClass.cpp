@@ -18,6 +18,8 @@ BezierClass::BezierClass(ID3D12DescriptorHeap * pDH, ID3D12Resource* pResource)
 	temp.z = 0.0f;
 	temp.w = 0.0f;
 
+	m_nrOfVertices = 0; //update
+
 	m_pBezierVertices.push_back(temp);
 	m_pPreviouslyCalculatedBezierVertices.push_back(temp);
 
@@ -34,13 +36,7 @@ BezierClass::~BezierClass()
 	//DELET THIS, hihi
 }
 
-void BezierClass::bezierConstantBuffer(std::vector<float4> vertices)
-{
-	//upload calculated vertices to gpu, will be called from GameClass every frame
-	
-}
-
-void BezierClass::CalculateBezierVertices()
+void BezierClass::CalculateBezierVertices(/*&commandList*/)
 {
 	int nrOfVertices = 1; //temp, set to number of vertices so we can loop for each vertex and calculate bezier offset
 
@@ -53,7 +49,8 @@ void BezierClass::CalculateBezierVertices()
 		m_pPreviouslyCalculatedBezierVertices[i] = previousBezierWithOffset; //update for next frame
 	}
 
-	bezierConstantBuffer(m_pBezierVertices);
 	m_pPreviouslyCalculatedBezierVertices = m_pBezierVertices;
+
+	//update commandList with new vertices from m_pBezierVertices
 	return;
 }

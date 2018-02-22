@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "D3DFactory.h"
 
+
 #include <wrl.h>
 
 D3DFactory::D3DFactory()
@@ -190,7 +191,7 @@ GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned
 	return new GPUHighway(type, pCQ, ppCAs.data(), ppFences.data(), iNumberOfCAs, ppCLs.data(), iNumberOfCLs);
 }
 
-BezierClass* D3DFactory::CreateBezier()
+BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 {
 	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	ID3D12Resource* pUploadCB = nullptr;
@@ -199,9 +200,9 @@ BezierClass* D3DFactory::CreateBezier()
 	D3D12_RESOURCE_DESC resourceDesc;
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	resourceDesc.Alignment = 0;
-	resourceDesc.Width = 48000; //??
-	resourceDesc.Height = 1;	//??
-	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.Width = 3;		//change to m_nrOfVertices (which has to come from Plane() class) * sizeof(float4)
+	resourceDesc.Height = 1;	//1 because one dimensional array of vertices?
+	resourceDesc.DepthOrArraySize = 1; //again 1 because one dimensional array of vertices?
 	resourceDesc.MipLevels = 1;
 	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
 	resourceDesc.SampleDesc.Count = 1;
@@ -216,15 +217,28 @@ BezierClass* D3DFactory::CreateBezier()
 	heapDesc.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 	heapDesc.CreationNodeMask = 1;
 	heapDesc.VisibleNodeMask = 1;
-
-
-	m_pDevice->CreateCommittedResource(
+	
+	HRESULT hr = m_pDevice->CreateCommittedResource(
 		&heapDesc,
 		D3D12_HEAP_FLAG_NONE, 
 		&resourceDesc, 
 		D3D12_RESOURCE_STATE_GENERIC_READ, 
 		nullptr, 
 		IID_PPV_ARGS(&pUploadCB));
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
+	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();	//?
+	m_cbDesc.SizeInBytes = (64/*temp*/ * sizeof(float4) + 255) & ~255;
+	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
+
+	D3D12_RANGE range;
+	range.Begin = 0;
+	range.End = 0;
+
+	uint8_t* address;
+	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address));
+	memcpy(address, reinterpret_cast<void*>(&m_pBezierVertices), nrOfVertices * sizeof(float4));
+	pUploadCB->Unmap(0, &range);
 
 	BezierClass* pB = new BezierClass(pDH, pUploadCB);
 	

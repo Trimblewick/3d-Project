@@ -29,10 +29,10 @@ private:
 	
 
 	//private variables
-	std::vector<float4>		m_pBezierVertices;
-	std::vector<float4>		m_pPreviouslyCalculatedBezierVertices;
+	std::vector<float4>					m_pBezierVertices;
+	std::vector<float4>					m_pPreviouslyCalculatedBezierVertices;
+	int									m_nrOfVertices;
 
-	ID3D12DescriptorHeap*	m_pConstantDescHeap;
-	ID3D12Resource*			m_pConstantUploadHeap;
-	
+	ID3D12DescriptorHeap*				m_pConstantDescHeap;
+	ID3D12Resource*						m_pConstantUploadHeap;	
 };

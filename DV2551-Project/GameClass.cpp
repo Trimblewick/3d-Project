@@ -17,7 +17,9 @@ GameClass::~GameClass()
 bool GameClass::Initialize(Window* pWindow)
 {
 	m_pD3DFactory = new D3DFactory();
-	m_pBezierClass = m_pD3DFactory->CreateBezier();
+
+	int nrOfVertices = 0; //change to nrOfVertices which we get from plane class
+	m_pBezierClass = m_pD3DFactory->CreateBezier(nrOfVertices);
 	m_pBezierClass->CalculateBezierVertices();
 
 	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);

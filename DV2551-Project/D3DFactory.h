@@ -25,10 +25,11 @@ public:
 	ID3D12DescriptorHeap*					CreateDH(int numDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE type, bool bShaderVisible);
 	ID3DBlob*								CompileShader(LPCWSTR filePath, LPCSTR shadermodel);
 	GPUHighway*								CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCAs, unsigned int iNumberOfCLs);
-	BezierClass*							CreateBezier();
+	BezierClass*							CreateBezier(int nrOfVertices);
 
 
 private:
 	IDXGIFactory4*							m_pDXGIFactory;
 	ID3D12Device*							m_pDevice;
+	std::vector<float4>						m_pBezierVertices;
 };
