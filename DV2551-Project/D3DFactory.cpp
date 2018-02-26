@@ -213,7 +213,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	//Set heap properties
 	D3D12_HEAP_PROPERTIES heapDesc;
 	heapDesc.Type = D3D12_HEAP_TYPE_UPLOAD;
-	heapDesc.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_COMBINE;
+	heapDesc.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
 	heapDesc.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
 	heapDesc.CreationNodeMask = 1;
 	heapDesc.VisibleNodeMask = 1;
@@ -227,7 +227,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 		IID_PPV_ARGS(&pUploadCB));
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
-	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();	//?
+	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
 	m_cbDesc.SizeInBytes = (64/*temp*/ * sizeof(float4) + 255) & ~255;
 	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
 
