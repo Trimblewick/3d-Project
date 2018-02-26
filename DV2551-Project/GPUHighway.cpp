@@ -2,132 +2,120 @@
 #include "GPUHighway.h"
 
 
-GPUHighway::GPUHighway(
-	D3D12_COMMAND_LIST_TYPE			type, 
-	ID3D12CommandQueue*				pCQ,
-	ID3D12CommandAllocator**		ppCAs, 
-	ID3D12Fence**					ppFences, 
-	unsigned int					iNumberOfCAsAndFences, 
-	ID3D12GraphicsCommandList**		ppCLs, 
-	unsigned int					iNumberOfCLs)
+GPUHighway::GPUHighway(D3D12_COMMAND_LIST_TYPE type, ID3D12CommandQueue* pCQ, ID3D12CommandAllocator** ppCAs,
+	ID3D12GraphicsCommandList** ppCLs, ID3D12Fence** ppFences, unsigned int iNumberOfCLs)
 {
 	m_type = type;
 	m_pCQ = pCQ;
-	
-	m_ppCAs = ppCAs;
-	m_ppFences = ppFences;
-	m_iNumberOfCAsAndFences = iNumberOfCAsAndFences;
 
-	m_pFenceValues = new size_t[iNumberOfCAsAndFences];
-	m_pFenceLocked = new bool[iNumberOfCAsAndFences];
-
-	m_handleFence = CreateEvent(NULL, NULL, NULL, NULL);
-
-	for (int i = 0; i < iNumberOfCAsAndFences; ++i)
-	{
-		m_pFenceValues[i] = 0;
-		m_pFenceLocked[i] = false;
-		
-	}
-
-	m_ppCLs = ppCLs;
 	m_iNumberOfCLs = iNumberOfCLs;
-	m_pCLLocked = new bool[iNumberOfCLs];
+	m_ppCAs = ppCAs;
+	m_ppCLs = ppCLs;
+	m_ppFences = ppFences;
+	m_ppCLQ = new std::vector<ID3D12CommandList*>[iNumberOfCLs];
+	m_pIndexCLQ = new std::vector<unsigned int>[iNumberOfCLs];
+	m_pCLLock = new int[iNumberOfCLs];
+	m_pFenceValues = new size_t[iNumberOfCLs];
+	m_pFenceLocked = new bool[iNumberOfCLs];
+
 	for (int i = 0; i < iNumberOfCLs; ++i)
 	{
-		m_pCLLocked[i] = false;
+		m_pCLLock[i] = i;
+		m_pFenceValues[i] = 0;
+		m_pFenceLocked[i] = false;
 	}
+
+	m_handleFence = CreateEvent(NULL, NULL, NULL, NULL);
 }
 
 GPUHighway::~GPUHighway()
 {
-	delete m_pFenceValues;
+	WaitForAllFences();
 
-	for (int i = 0; i < m_iNumberOfCAsAndFences; ++i)
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
 	{
-		
+		SAFE_RELEASE(m_ppCAs[i]);
+		SAFE_RELEASE(m_ppCLs[i]);
+		SAFE_RELEASE(m_ppFences[i]);
 	}
+	SAFE_RELEASE(m_pCQ);
 
+	delete[] m_ppCLs;
+	delete[] m_ppCAs;
+	delete[] m_ppFences;
+	delete m_pCLLock;
+	delete m_pFenceValues;
+	delete m_pFenceLocked;
+	delete[] m_pIndexCLQ;
+	delete[] m_ppCLQ;
 }
 
-ID3D12CommandQueue * GPUHighway::GetCQ()
+ID3D12CommandQueue* GPUHighway::GetCQ()
 {
 	return m_pCQ;
 }
 
 void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 {
-	m_ppCLQ.push_back(pCL);
+	int iLock = -1;
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	{
+		if (m_ppCLs[i] == pCL)
+		{
+			iLock = i;
+			m_pCLLock[i] = -1;
+		}
+	}
+	assert(iLock > -1);//cant be queued in this highway
+
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	{
+		if (!m_pFenceLocked[i])
+		{
+			m_ppCLQ[i].push_back(pCL);
+			m_pIndexCLQ->push_back(iLock);
+			break;
+		}
+	}
 }
 
-ID3D12GraphicsCommandList * GPUHighway::GetFreshCL()
+ID3D12GraphicsCommandList* GPUHighway::GetFreshCL()
 {
-	Command newCommand;
-	for (int i = 0; i < m_iNumberOfCLs; ++i)//find free cl
+	ID3D12GraphicsCommandList* pCL = nullptr;
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
 	{
-		if (!m_pCLLocked[i])
+		if (m_pCLLock[i] == i)
 		{
-			newCommand.pCL = m_ppCLs[i];
-			i = m_iNumberOfCLs;//exit
-			m_pCLLocked[i] = true;
+			pCL = m_ppCLs[i];
+			pCL->Reset(m_ppCAs[i], nullptr);
+			break;
 		}
 	}
+	
+	return pCL;
 
-	if (newCommand.pCL == nullptr)//need more cls
-		return nullptr;
-
-	int iSizeVec = m_commandVec.size();
-
-	if (iSizeVec >= m_iNumberOfCAsAndFences)
-	{
-		return nullptr;
-	}
-	else if (iSizeVec == 0)
-	{
-		newCommand.pCA = m_ppCAs[0];
-	}
-	else
-	{
-		for (int i = 0; i < iSizeVec; ++i)//find free ca
-		{
-			if (m_ppCAs[i] != m_commandVec[i].pCA)
-			{
-				newCommand.pCA = m_ppCAs[i];
-				i = iSizeVec;//exit
-			}
-		}
-	}
-	m_commandVec.push_back(newCommand);
-	newCommand.pCL->Reset(newCommand.pCA, nullptr);
-
-	return newCommand.pCL;
 }
 
 int GPUHighway::ExecuteCQ()
 {
-	m_pCQ->ExecuteCommandLists(m_ppCLQ.size(), m_ppCLQ.data());
-
-	for (Command c : m_commandVec)
+	int index = -1;
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
 	{
-		for (ID3D12CommandList* p : m_ppCLQ)
+		if (!m_pFenceLocked[i])
 		{
-			if (c.pCL == p)
-			{
-				c.pCL = nullptr;
-				break;
-			}
+			m_pCQ->ExecuteCommandLists(m_ppCLQ[i].size(), m_ppCLQ[i].data());
+			m_ppCLQ[i].clear();
 		}
 	}
-	m_ppCLQ.clear();
-
-	int index = -1;
-	for (int i = 0; i < m_iNumberOfCAsAndFences; ++i)//use the first fence that is availible
-	{ 
+	
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	{
 		if (!m_pFenceLocked[i])
 		{
 			m_pCQ->Signal(m_ppFences[i], m_pFenceValues[i]);
 			index = i;
-			i = m_iNumberOfCAsAndFences;
+			m_pFenceLocked[i] = true;
+			break;
 		}
 	}
 	return index;
@@ -135,7 +123,7 @@ int GPUHighway::ExecuteCQ()
 
 void GPUHighway::Wait(int index)
 {
-	if (!m_pFenceLocked)
+	if (!m_pFenceLocked[index])
 		return;
 
 	if (m_ppFences[index]->GetCompletedValue() < m_pFenceValues[index])
@@ -146,21 +134,17 @@ void GPUHighway::Wait(int index)
 	m_pFenceValues[index]++;
 	m_pFenceLocked[index] = false;
 
-	//reset CAs
-	for (int i = 0; i < m_commandVec.size(); ++i)
+	for (unsigned int i : m_pIndexCLQ[index])
 	{
-		if (m_commandVec[i].pCL = nullptr)
-		{
-			DxAssert(m_commandVec[i].pCA->Reset());
-			m_commandVec[i].pCA = nullptr;
-			m_commandVec.erase(m_commandVec.begin() + i, m_commandVec.begin() + i + 1);
-		}
+		m_ppCAs[i]->Reset();
+		m_pCLLock[i] = i;
 	}
+	m_pIndexCLQ[index].clear();
 }
 
 void GPUHighway::WaitForAllFences()
 {
-	for (int i = 0; i < m_iNumberOfCAsAndFences; ++i)
+	for (int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (m_pFenceLocked[i])
 		{

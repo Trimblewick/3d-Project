@@ -17,14 +17,15 @@ GameClass::~GameClass()
 bool GameClass::Initialize(Window* pWindow)
 {
 	m_pD3DFactory = new D3DFactory();
+	
+	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount);
+	m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 5);
 
 	int nrOfVertices = 0; //change to nrOfVertices which we get from plane class
 	m_pBezierClass = m_pD3DFactory->CreateBezier(nrOfVertices);
 	m_pBezierClass->CalculateBezierVertices();
 
 	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);
-
-	tempcq = m_pD3DFactory->CreateCQ(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
 
 	//set up swapchain with the graphics highway
 	DXGI_MODE_DESC descMode = {};
@@ -44,8 +45,7 @@ bool GameClass::Initialize(Window* pWindow)
 	descSwapChain.SampleDesc = descSample;
 	descSwapChain.Windowed = true;
 
-	m_pSwapChain = m_pD3DFactory->CreateSwapChain(&descSwapChain, tempcq);//m_pGraphicsHighway->GetCQ());
-	temphandle = CreateEvent(NULL, NULL, NULL, NULL);
+	m_pSwapChain = m_pD3DFactory->CreateSwapChain(&descSwapChain, m_pGraphicsHighway->GetCQ());//m_pGraphicsHighway->GetCQ());
 
 	//create rtvs and descriptor heap
 	m_pDHRTV = m_pD3DFactory->CreateDH(m_iBackBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
@@ -96,9 +96,17 @@ bool GameClass::Initialize(Window* pWindow)
 	descRasterizer.ForcedSampleCount = 0;
 	descRasterizer.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
+	D3D12_ROOT_DESCRIPTOR d = {};
+
+	D3D12_ROOT_PARAMETER p = {};
+	p.Descriptor = d;
+	p.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	p.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
 	D3D12_ROOT_SIGNATURE_DESC descRS = {};
 	descRS.Flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_NONE;
-	
+	descRS.NumParameters = 1;
+	descRS.pParameters = &p;
 
 	tempRS = m_pD3DFactory->CreateRS(&descRS);
 
@@ -124,26 +132,7 @@ bool GameClass::Initialize(Window* pWindow)
 	SAFE_RELEASE(pVSblob);
 	SAFE_RELEASE(pPSblob);
 
-	for (int i = 0; i < m_iBackBufferCount; ++i)
-	{
-		tempcas[i] = m_pD3DFactory->CreateCA(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
-		tempFences[i] = m_pD3DFactory->CreateFence();
-		tempcls[i] = m_pD3DFactory->CreateCL(tempcas[i], D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT);
-		tempFencevalues[i] = 0;
-		tempcls[i]->Close();
-	}
-
-	m_viewport.TopLeftX = 0;
-	m_viewport.TopLeftY = 0;
-	m_viewport.Width = pWindow->GetWidth();
-	m_viewport.Height = pWindow->GetHeight();
-	m_viewport.MinDepth = 0.0f;
-	m_viewport.MaxDepth = 1.0f;
-
-	m_rectScissor.left = (long)0;
-	m_rectScissor.top = (long)0;
-	m_rectScissor.right = (long)pWindow->GetWidth();
-	m_rectScissor.bottom = (long)pWindow->GetHeight();
+	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
 
 	return true;
 }
@@ -155,6 +144,31 @@ void GameClass::CleanUp()
 		delete m_pD3DFactory;
 		m_pD3DFactory = nullptr;
 	}
+	if (m_pGraphicsHighway)
+	{
+		delete m_pGraphicsHighway;
+		m_pGraphicsHighway = nullptr;
+	}
+	if (m_pCopyHighway)
+	{
+		delete m_pCopyHighway;
+		m_pCopyHighway = nullptr;
+	}
+	if (m_pCamera)
+	{
+		delete m_pCamera;
+		m_pCamera = nullptr;
+	}
+	SAFE_RELEASE(m_pSwapChain);
+	
+	for (int i = 0; i < m_iBackBufferCount; ++i)
+	{
+		SAFE_RELEASE(m_ppRTV[i]);
+	}
+	SAFE_RELEASE(m_pDHRTV);
+	SAFE_RELEASE(tempPSO);
+	SAFE_RELEASE(tempRS);
+
 	if (m_pBezierClass)
 	{
 		delete m_pBezierClass;
@@ -174,9 +188,7 @@ void GameClass::Update(Input * input, double dDeltaTime)
 ID3D12GraphicsCommandList* GameClass::ClearBackBuffer()
 {
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	ID3D12GraphicsCommandList* pCL = tempcls[iFrameIndex];//m_pGraphicsHighway->GetFreshCL();
-	tempcas[iFrameIndex]->Reset();
-	pCL->Reset(tempcas[iFrameIndex], nullptr);
+	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
 
 	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
 	transition.pResource = m_ppRTV[iFrameIndex];
@@ -204,8 +216,7 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 
 	pCL->SetGraphicsRootSignature(tempRS);
 
-	pCL->RSSetViewports(1, &m_viewport);
-	pCL->RSSetScissorRects(1, &m_rectScissor);
+	m_pCamera->BindCamera(pCL, iFrameIndex);
 	pCL->SetPipelineState(tempPSO);
 	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCL->DrawInstanced(3, 1, 0, 0);
@@ -219,28 +230,15 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 	barrierTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
 	barrierTransition.Transition = transition;
 
-
 	pCL->ResourceBarrier(1, &barrierTransition);
-	//pCL->Close();
-
-	//m_pGraphicsHighway->QueueCL(pCL);
-	//m_pGraphicsHighway->ExecuteCQ();
-
 	pCL->Close();
-	ID3D12CommandList* ppcls[] = { pCL };
-	tempcq->ExecuteCommandLists(1, ppcls);
-	tempcq->Signal(tempFences[iFrameIndex], tempFencevalues[iFrameIndex]);
+
+	m_pGraphicsHighway->QueueCL(pCL);
+	int test = m_pGraphicsHighway->ExecuteCQ();
+	
 
 	m_pSwapChain->Present(0, 0);
-
-	iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	if (tempFences[iFrameIndex]->GetCompletedValue() < tempFencevalues[iFrameIndex])
-	{
-		tempFences[iFrameIndex]->SetEventOnCompletion(tempFencevalues[iFrameIndex], temphandle);
-		WaitForSingleObject(temphandle, INFINITE);
-	}
-	tempFencevalues[iFrameIndex]++;
-
+	m_pGraphicsHighway->Wait(test);
 }
 
 void GameClass::Frame()
