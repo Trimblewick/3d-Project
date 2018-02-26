@@ -26,4 +26,5 @@ void Plane::bind(ID3D12GraphicsCommandList* pCL)
 {
 	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCL->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+	pCL->DrawInstanced(3, 1, 0, 0);
 }

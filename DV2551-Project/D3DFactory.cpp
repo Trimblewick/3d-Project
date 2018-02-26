@@ -285,6 +285,8 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	};
 	int vBufferSize = sizeof(vList);
 
+	//Vertex Buffer ---------------------------------
+
 	D3D12_HEAP_PROPERTIES heapProperties;
 	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
 	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -295,7 +297,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	D3D12_RESOURCE_DESC bufferDesc;
 	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	bufferDesc.Alignment = 0;
-	bufferDesc.Width = vBufferSize; //Bytes!
+	bufferDesc.Width = (vBufferSize + 255) & ~255; //Bytes!
 	bufferDesc.Height = 1;
 	bufferDesc.DepthOrArraySize = 1;
 	bufferDesc.MipLevels = 1;
@@ -326,7 +328,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	D3D12_RESOURCE_DESC uploadDesc;
 	uploadDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	uploadDesc.Alignment = 0;
-	uploadDesc.Width = vBufferSize; //Bytes!
+	uploadDesc.Width = (vBufferSize + 255) & ~255; //Bytes!
 	uploadDesc.Height = 1;
 	uploadDesc.DepthOrArraySize = 1;
 	uploadDesc.MipLevels = 1;
@@ -345,12 +347,12 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 		nullptr,
 		IID_PPV_ARGS(&pVBUpload));
 
-	pVBUpload->SetName(L"Vulles Dank:a Upload Heap");
+	pVBUpload->SetName(L"Vulles Dank:a Upload Heap"); //TODO: this one too ex dee
 
 	D3D12_SUBRESOURCE_DATA vertexData = {};
 	vertexData.pData = reinterpret_cast<BYTE*>(vList);
-	vertexData.RowPitch = vBufferSize;
-	vertexData.SlicePitch = vBufferSize; //both are supposed to be size in bytes of all triangles...
+	vertexData.RowPitch = uploadDesc.Width;
+	vertexData.SlicePitch = uploadDesc.Width; //both are supposed to be size in bytes of all triangles...
 
 	UINT64 RequiredSize = 0;
 	UINT NumSubresources = 1;
@@ -397,11 +399,11 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 		D3D12_MEMCPY_DEST DestData = { &vertexData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, pLayouts[i].Footprint.RowPitch * pNumRows[i] };
 		for (UINT z = 0; z < pLayouts[i].Footprint.Depth; ++z)
 		{
-			BYTE* pDestSlice = reinterpret_cast<BYTE*>(DestData.pData) + DestData.SlicePitch * z;
+			//BYTE* pDestSlice = reinterpret_cast<BYTE*>(DestData.pData) + DestData.SlicePitch * z;
 			const BYTE* pSrcSlice = reinterpret_cast<const BYTE*>(vertexData.pData) + vertexData.SlicePitch * z;
 			for (UINT y = 0; y < pNumRows[i]; ++y)
 			{
-				memcpy(pDestSlice + DestData.RowPitch * y,
+				memcpy(pData + DestData.RowPitch * y,
 					pSrcSlice + vertexData.RowPitch * y,
 					(SIZE_T)pRowSizesInBytes[i]);
 			}
@@ -424,8 +426,12 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	vbView.SizeInBytes = vBufferSize;
 	
 
-	return new Plane(16, pVBuffer, vbView);
-	//ID3D12DescriptorHeap* pDHverts = this->CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	//Index buffer-----------------------
 
+
+
+	//-----------------------------------
+
+	return new Plane(16, pVBuffer, vbView);
 }
 

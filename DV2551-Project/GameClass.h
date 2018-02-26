@@ -4,7 +4,7 @@
 #include "D3DFactory.h"
 #include "GPUHighway.h"
 #include "Window.h"
-
+#include "Plane.h"
 
 class GameClass
 {
@@ -33,6 +33,7 @@ private:
 	D3DFactory*						m_pD3DFactory;
 	GPUHighway*						m_pGraphicsHighway;
 	Camera*							m_pCamera;
+	Plane*							m_pPlane;
 
 	IDXGISwapChain3*				m_pSwapChain;
 	ID3D12Resource*					m_ppRTV[m_iBackBufferCount];
@@ -41,8 +42,8 @@ private:
 	ID3D12RootSignature*			tempRS;
 	ID3D12PipelineState*			tempPSO;
 
-	D3D12_VIEWPORT						m_viewport;
-	D3D12_RECT							m_rectScissor;
-	
+	D3D12_VIEWPORT					m_viewport;
+	D3D12_RECT						m_rectScissor;
+
 };
  

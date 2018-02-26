@@ -1,5 +1,10 @@
-﻿  D3DFactory.cpp
-c:\temp\dv2551-project\dv2551-project\d3dfactory.cpp(178): warning C4018: '<': signed/unsigned mismatch
-c:\temp\dv2551-project\dv2551-project\d3dfactory.cpp(183): warning C4018: '<': signed/unsigned mismatch
-  DV2551-Project.vcxproj -> C:\Temp\DV2551-Project\x64\Debug\DV2551-Project.exe
-  DV2551-Project.vcxproj -> C:\Temp\DV2551-Project\x64\Debug\DV2551-Project.pdb (Partial PDB)
+﻿  GameClass.cpp
+c:\temp\dv2551-project\dv2551-project\input.h(55): warning C4091: 'typedef ': ignored on left of 'Input::KEYS' when no variable is declared
+c:\temp\dv2551-project\dv2551-project\gameclass.cpp(135): warning C4244: '=': conversion from 'int' to 'FLOAT', possible loss of data
+c:\temp\dv2551-project\dv2551-project\gameclass.cpp(136): warning C4244: '=': conversion from 'int' to 'FLOAT', possible loss of data
+  D3DFactory.cpp
+c:\temp\dv2551-project\dv2551-project\input.h(55): warning C4091: 'typedef ': ignored on left of 'Input::KEYS' when no variable is declared
+c:\temp\dv2551-project\dv2551-project\d3dfactory.cpp(174): warning C4018: '<': signed/unsigned mismatch
+  Generating Code...
+  DV2551-Project.vcxproj -> C:\temp\DV2551-Project\x64\Debug\DV2551-Project.exe
+  DV2551-Project.vcxproj -> C:\temp\DV2551-Project\x64\Debug\DV2551-Project.pdb (Partial PDB)

@@ -91,13 +91,24 @@ bool GameClass::Initialize(Window* pWindow)
 	descRasterizer.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
 	D3D12_ROOT_SIGNATURE_DESC descRS = {};
-	descRS.Flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_NONE;
+	descRS.Flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	
 
 	tempRS = m_pD3DFactory->CreateRS(&descRS);
 
-	ID3DBlob* pVSblob = m_pD3DFactory->CompileShader(L"VertexShader.hlsl", "vs_5_1");
+	ID3DBlob* pVSblob = m_pD3DFactory->CompileShader(L"VertexShader2.hlsl", "vs_5_1");
 	ID3DBlob* pPSblob = m_pD3DFactory->CompileShader(L"PixelShader.hlsl", "ps_5_1");
+
+	D3D12_INPUT_ELEMENT_DESC inputLayout[] =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
+
+	inputLayoutDesc.NumElements = sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
+	inputLayoutDesc.pInputElementDescs = inputLayout;
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC descPSO = {};
 	descPSO.BlendState = descBlendSate;
@@ -112,6 +123,7 @@ bool GameClass::Initialize(Window* pWindow)
 	descPSO.SampleDesc = descSample;
 	descPSO.SampleMask = 0xffffffff;
 	descPSO.pRootSignature = tempRS;
+	descPSO.InputLayout = inputLayoutDesc;
 
 	tempPSO = m_pD3DFactory->CreatePSO(&descPSO);
 
@@ -237,7 +249,6 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 
 void GameClass::Frame()
 {
-
 	//for each rs
 		//for each pipe
 			//highway, get cls
