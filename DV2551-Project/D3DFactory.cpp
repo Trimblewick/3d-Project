@@ -163,31 +163,109 @@ ID3DBlob * D3DFactory::CompileShader(LPCWSTR filePath, LPCSTR shadermodel)
 	return shaderBlob;
 }
 
-GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCAs, unsigned int iNumberOfCLs)
+GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCLs)
 {
-	if (iNumberOfCAs < iNumberOfCLs)
-	{
-		return nullptr;
-	}
 	ID3D12CommandQueue* pCQ = CreateCQ(type);
 
-	std::vector<ID3D12CommandAllocator*> ppCAs;
-	std::vector<ID3D12Fence*> ppFences;
-	std::vector<ID3D12GraphicsCommandList*> ppCLs;
+	ID3D12CommandAllocator** ppCAs = new ID3D12CommandAllocator*[iNumberOfCLs];
+	ID3D12GraphicsCommandList** ppCLs = new ID3D12GraphicsCommandList*[iNumberOfCLs];
+	ID3D12Fence** ppFences = new ID3D12Fence*[iNumberOfCLs];
 
-	for (int i = 0; i < iNumberOfCAs; ++i)
-	{
-		ppCAs.push_back(CreateCA(type));
-		ppFences.push_back(CreateFence());
-	}
 	for (int i = 0; i < iNumberOfCLs; ++i)
 	{
-		ppCLs.push_back(CreateCL(ppCAs[i], type));
+		ppCAs[i] = CreateCA(type);
+		ppCLs[i] = CreateCL(ppCAs[i], type);
 		DxAssert(ppCLs[i]->Close());
+		ppFences[i] = CreateFence();
 	}
 
+	return new GPUHighway(type, pCQ, ppCAs, ppCLs, ppFences, iNumberOfCLs);
+}
 
-	return new GPUHighway(type, pCQ, ppCAs.data(), ppFences.data(), iNumberOfCAs, ppCLs.data(), iNumberOfCLs);
+Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, long iHeightWindow)
+{
+	Camera::CameraBuffer data;
+	data.forward.x = 0.0f;
+	data.forward.y = 0.0f;
+	data.forward.z = 1.0f;
+
+	data.position.x = 0.0f;
+	data.position.y = 0.0f;
+	data.position.z = 0.0f;
+	
+	data.right.x = 1.0f;
+	data.right.y = 0.0f;
+	data.right.z = 0.0f;
+
+	data.up.x = 0.0f;
+	data.up.y = 1.0f;
+	data.up.z = 0.0f;
+
+	DirectX::XMMATRIX tempViewMat = DirectX::XMMatrixTranspose(DirectX::XMMatrixLookToLH(DirectX::XMLoadFloat3(&data.position), DirectX::XMLoadFloat3(&data.forward), DirectX::XMLoadFloat3(&data.up)));
+	DirectX::XMMATRIX tempProjMat = DirectX::XMMatrixTranspose(DirectX::XMMatrixPerspectiveFovLH(45.0f*(DirectX::XM_PI / 180.0f), iWidthWindow / (float)iHeightWindow, 0.1f, 1000.0f));
+	DirectX::XMMATRIX tempVPMat = DirectX::XMMatrixMultiply(tempViewMat, tempProjMat);
+	
+	DirectX::XMStoreFloat4x4(&data.viewMat, tempViewMat);
+	DirectX::XMStoreFloat4x4(&data.projMat, tempProjMat);
+	DirectX::XMStoreFloat4x4(&data.vpMat, tempVPMat);
+
+	D3D12_VIEWPORT viewport;
+	viewport.TopLeftX = 0.0f;
+	viewport.TopLeftY = 0.0f;
+	viewport.MinDepth = 1.0f;
+	viewport.MaxDepth = 0.0f;
+	viewport.Width = (float)iWidthWindow;
+	viewport.Height = (float)iHeightWindow;
+
+	D3D12_RECT rectScissor;
+	rectScissor.left = (long)0;
+	rectScissor.top = (long)0;
+	rectScissor.bottom = iHeightWindow;
+	rectScissor.right = iWidthWindow;
+
+	D3D12_HEAP_PROPERTIES heapProp = {};
+	heapProp.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapProp.CreationNodeMask = 1;
+	heapProp.VisibleNodeMask = 1;
+	heapProp.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProp.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+
+	D3D12_RESOURCE_DESC descResource = {};
+	descResource.Alignment = 0;
+	descResource.DepthOrArraySize = 1;
+	descResource.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	descResource.Flags = D3D12_RESOURCE_FLAG_NONE;
+	descResource.Format = DXGI_FORMAT_UNKNOWN;
+	descResource.Height = 1;
+	descResource.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	descResource.MipLevels = 1;
+	descResource.SampleDesc.Count = 1;
+	descResource.SampleDesc.Quality = 0;
+	descResource.Width = 65536;//sizeof(Camera::CameraBuffer);
+
+	ID3D12DescriptorHeap* pDH = CreateDH(3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	int iIncrementSizeCBV = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = pDH->GetCPUDescriptorHandleForHeapStart();
+	unsigned char** ppBufferAdressPointers = new unsigned char*[iBufferCount];
+	ID3D12Resource** ppBufferMatrix = new ID3D12Resource*[iBufferCount];
+	D3D12_CONSTANT_BUFFER_VIEW_DESC descCB = {};
+	descCB.SizeInBytes = sizeof(data);
+	for (unsigned int i = 0; i < iBufferCount; ++i)
+	{
+		m_pDevice->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE, &descResource, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&ppBufferMatrix[i]));
+	
+		D3D12_RANGE rangeRead = {};
+
+		descCB.BufferLocation = ppBufferMatrix[i]->GetGPUVirtualAddress();
+		m_pDevice->CreateConstantBufferView(&descCB, handleDH);
+		handleDH.ptr += iIncrementSizeCBV;
+
+		DxAssert(ppBufferMatrix[i]->Map(0, &rangeRead, reinterpret_cast<void**>(&ppBufferAdressPointers[i])));
+		memcpy(ppBufferAdressPointers[i], &data, sizeof(data));
+	}
+	
+
+	return new Camera(data, viewport, rectScissor, ppBufferMatrix, ppBufferAdressPointers, iBufferCount, pDH);
 }
 
 Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)

@@ -18,7 +18,7 @@ public:
 	void							CleanUp();
 
 	void							Update(Input* input, double dDeltaTime);
-	ID3D12GraphicsCommandList*							ClearBackBuffer();
+	ID3D12GraphicsCommandList*		ClearBackBuffer();
 	void							PrecentBackBuffer(ID3D12GraphicsCommandList* pCL);
 	void							Frame();
 
@@ -31,8 +31,8 @@ private:
 
 
 	D3DFactory*						m_pD3DFactory;
-	//GPUHighway*						m_pGraphicsHighway;
-
+	GPUHighway*						m_pGraphicsHighway;
+	Camera*							m_pCamera;
 
 	IDXGISwapChain3*				m_pSwapChain;
 	ID3D12Resource*					m_ppRTV[m_iBackBufferCount];
@@ -40,14 +40,6 @@ private:
 
 	ID3D12RootSignature*			tempRS;
 	ID3D12PipelineState*			tempPSO;
-	ID3D12CommandQueue*				tempcq;
-
-	ID3D12CommandAllocator*			tempcas[m_iBackBufferCount];
-	ID3D12GraphicsCommandList*		tempcls[m_iBackBufferCount];
-	ID3D12Fence*					tempFences[m_iBackBufferCount];
-	size_t							tempFencevalues[m_iBackBufferCount];
-	HANDLE							temphandle;
-	Plane*							m_pPlane;
 
 	D3D12_VIEWPORT						m_viewport;
 	D3D12_RECT							m_rectScissor;
