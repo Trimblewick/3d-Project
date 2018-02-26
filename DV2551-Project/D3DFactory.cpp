@@ -195,6 +195,28 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 {
 	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	ID3D12Resource* pUploadCB = nullptr;
+	float4 test;
+	test.x = 0.5f;
+	test.y = 0.0f;
+	test.z = 0.0f;
+	test.w = 1.0f;
+
+	float4 test2;
+	test.x = 1.5f;
+	test.y = 0.0f;
+	test.z = 0.0f;
+	test.w = 1.0f;
+
+	float4 test3;
+	test.x = 1.0f;
+	test.y = 1.0f;
+	test.z = 0.0f;
+	test.w = 1.0f;
+
+
+	m_pBezierVertices.push_back(test);
+	m_pBezierVertices.push_back(test2);
+	m_pBezierVertices.push_back(test3);
 
 	//Set resource desc
 	D3D12_RESOURCE_DESC resourceDesc;
