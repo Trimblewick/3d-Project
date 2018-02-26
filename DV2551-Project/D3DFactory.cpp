@@ -260,7 +260,8 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 		m_pDevice->CreateConstantBufferView(&descCB, handleDH);
 		handleDH.ptr += iIncrementSizeCBV;
 
-		DxAssert(ppBufferMatrix[i]->Map(0, &rangeRead, reinterpret_cast<void**>(&ppBufferAdressPointers[i])));
+		HRESULT  hr = ppBufferMatrix[i]->Map(0, &rangeRead, reinterpret_cast<void**>(&ppBufferAdressPointers[i]));
+		
 		memcpy(ppBufferAdressPointers[i], &data, sizeof(data));
 	}
 	

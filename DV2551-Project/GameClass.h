@@ -32,6 +32,7 @@ private:
 
 	D3DFactory*						m_pD3DFactory;
 	GPUHighway*						m_pGraphicsHighway;
+	GPUHighway*						m_pCopyHighway;
 	Camera*							m_pCamera;
 
 	IDXGISwapChain3*				m_pSwapChain;
@@ -40,9 +41,6 @@ private:
 
 	ID3D12RootSignature*			tempRS;
 	ID3D12PipelineState*			tempPSO;
-
-	D3D12_VIEWPORT						m_viewport;
-	D3D12_RECT							m_rectScissor;
 	
 };
  

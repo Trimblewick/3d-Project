@@ -37,7 +37,7 @@ void Camera::BindCamera(ID3D12GraphicsCommandList * pCL, unsigned int iBufferInd
 {
 	pCL->RSSetViewports(1, &m_viewport);
 	pCL->RSSetScissorRects(1, &m_rectscissor);
-	//pCL->SetGraphicsRootConstantBufferView(0, m_ppBufferMatrix[iBufferIndex]->GetGPUVirtualAddress());
+	pCL->SetGraphicsRootConstantBufferView(0, m_ppBufferMatrix[iBufferIndex]->GetGPUVirtualAddress());
 }
 
 
