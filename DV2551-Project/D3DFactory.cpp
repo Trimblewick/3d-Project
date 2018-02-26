@@ -328,7 +328,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
 	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
-	m_cbDesc.SizeInBytes = (64/*temp*/ * sizeof(float4) + 255) & ~255;
+	m_cbDesc.SizeInBytes = (m_pBezierVertices.size() * sizeof(float4) + 255) & ~255;
 	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
 
 	D3D12_RANGE range;

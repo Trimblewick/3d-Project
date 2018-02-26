@@ -25,6 +25,14 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pBezierClass = m_pD3DFactory->CreateBezier(nrOfVertices);
 	m_pBezierClass->CalculateBezierVertices();
 
+	//Constant Buffer Descriptor, map to GPU registers
+	D3D12_DESCRIPTOR_RANGE cbvDescriptor;
+	cbvDescriptor.BaseShaderRegister = 0;
+	cbvDescriptor.NumDescriptors = 1; //only have 1 cb
+	cbvDescriptor.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+	cbvDescriptor.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	cbvDescriptor.RegisterSpace = 0;
+
 	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);
 
 	//set up swapchain with the graphics highway
