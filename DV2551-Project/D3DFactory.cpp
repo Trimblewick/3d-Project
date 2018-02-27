@@ -275,21 +275,21 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	ID3D12Resource* pUploadCB = nullptr;
 
 	float4 test;
-	test.x = 0.5f;
+	test.x = -5.0f;
 	test.y = 0.0f;
-	test.z = 0.0f;
+	test.z = 10.0f;
 	test.w = 1.0f;
 
 	float4 test2;
-	test2.x = 1.5f;
-	test2.y = 0.0f;
-	test2.z = 0.0f;
+	test2.x = 0.0f;
+	test2.y = 5.0f;
+	test2.z = 10.0f;
 	test2.w = 1.0f;
 
 	float4 test3;
-	test3.x = 1.0f;
-	test3.y = 1.0f;
-	test3.z = 0.0f;
+	test3.x = 5.0f;
+	test3.y = 0.0f;
+	test3.z = 10.0f;
 	test3.w = 1.0f;
 
 	m_pBezierVertices.push_back(test);

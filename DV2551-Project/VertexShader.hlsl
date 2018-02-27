@@ -13,15 +13,35 @@ cbuffer camera : register(b0)
 	float pad4;
 };
 
-float4 main( uint id : SV_VERTEXID/*float4 pos : POSITION*/ ) : SV_POSITION
+cbuffer bezier : register(b1)
 {
+	float4 bezierVertices[3]; //hardcode array size?
+	//float4 bezierVertices;
+}
+
+//struct VSOUT 
+//{
+//	float4 pos: SV_POSITION;
+//	float4 color : COLOR;
+//};
+
+float4 /*VSOUT*/ main( uint id : SV_VERTEXID/*float4 pos : POSITION*/ ) : SV_POSITION
+{
+	//VSOUT output;
+	
 	if (id == 0)
 	{
 		return mul(float4(-0.5f, 0.5f, 10.0, 1.0f), vpMat);
+		//return mul(bezierVertices[0], vpMat);
 	}
 	if (id == 1)
 	{
 		return mul(float4(0.0f, -2.5f, 10.0, 1.0f), vpMat);
+		//return mul(bezierVertices[1], vpMat);
 	}
-	return mul(float4(0.5f, 0.5f, 5.0, 1.0f), vpMat);
+	else
+	{
+		//return mul(float4(0.5f, 0.5f, 5.0, 1.0f), vpMat);
+		return mul(bezierVertices[2], vpMat);
+	}
 }
