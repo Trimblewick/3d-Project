@@ -22,7 +22,7 @@ public:
 	BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource* pResource);
 	~BezierClass();
 	void CalculateBezierVertices();
-	void bezierConstantBuffer(std::vector<float4> vertices);
+	void BindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex);
 
 private:
 	//private functions

@@ -335,7 +335,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	D3D12_RANGE range = { 0,0 }; //Entire range
 
 	uint8_t* address;
-	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address));
+	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address)); 
 	memcpy(address, reinterpret_cast<void*>(&m_pBezierVertices), nrOfVertices * sizeof(float4));
 	pUploadCB->Unmap(0, &range);
 
