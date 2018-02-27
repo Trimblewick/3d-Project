@@ -22,11 +22,11 @@ public:
 		float pad4;
 	};
 
-	Camera(CameraBuffer data, D3D12_VIEWPORT viewport, D3D12_RECT scissorRect, 
-		ID3D12Resource** ppBufferMatrix, unsigned char** ppBufferAdressPointers, unsigned int iBufferCount, ID3D12DescriptorHeap* pDH);
+	Camera(CameraBuffer data, D3D12_VIEWPORT viewport, D3D12_RECT scissorRect, ID3D12Resource* pUploadHeap, unsigned char* m_pUploadHeapAdressPointer,
+		ID3D12Resource** ppBufferMatrixHeap, unsigned int iBufferCount, ID3D12DescriptorHeap* pDH);
 	~Camera();
 
-	void									Update(Input* pInput, double dDeltaTime, unsigned int iBufferIndex);
+	void									Update(Input* pInput, double dDeltaTime, unsigned int iBufferIndex, ID3D12GraphicsCommandList* pCopyCL);
 	void									BindCamera(ID3D12GraphicsCommandList* pCL, unsigned int iBufferIndex);
 private:
 	D3D12_VIEWPORT							m_viewport;
@@ -35,7 +35,8 @@ private:
 	CameraBuffer							m_data;
 
 	unsigned int							m_iBufferCount;
-	ID3D12Resource**						m_ppBufferMatrix;
-	unsigned char**							m_ppBufferAdressPointers;
+	ID3D12Resource**						m_ppBufferMatrixHeap;
+	ID3D12Resource*							m_pUploadHeap;
+	unsigned char*							m_pUploadHeapAdressPointer;
 	ID3D12DescriptorHeap*					m_pDH;
 };

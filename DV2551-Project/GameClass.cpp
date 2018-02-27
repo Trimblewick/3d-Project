@@ -85,7 +85,7 @@ bool GameClass::Initialize(Window* pWindow)
 
 	D3D12_RASTERIZER_DESC descRasterizer = {};
 	descRasterizer.FillMode = D3D12_FILL_MODE_SOLID;
-	descRasterizer.CullMode = D3D12_CULL_MODE_NONE;
+	descRasterizer.CullMode = D3D12_CULL_MODE_BACK;
 	descRasterizer.FrontCounterClockwise = false;
 	descRasterizer.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
 	descRasterizer.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
@@ -181,7 +181,13 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 {
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	m_dDeltaTime = dDeltaTime;
-	m_pCamera->Update(pInput, dDeltaTime, iFrameIndex);
+	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
+	m_pCamera->Update(pInput, dDeltaTime, iFrameIndex, pCopyCL);
+	pCopyCL->Close();
+	m_pCopyHighway->QueueCL(pCopyCL);
+	int temp = m_pCopyHighway->ExecuteCQ();
+	m_pCopyHighway->Wait(temp);
+
 	m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
 	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
 	PrecentBackBuffer(pCLtest);

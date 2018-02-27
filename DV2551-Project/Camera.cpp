@@ -2,16 +2,23 @@
 #include "Camera.h"
 
 
-
-Camera::Camera(CameraBuffer data, D3D12_VIEWPORT viewport, D3D12_RECT scissorRect, 
-	ID3D12Resource** ppBufferMatrix, unsigned char** ppBufferAdressPointers, unsigned int iBufferCount, ID3D12DescriptorHeap* pDH)
+Camera::Camera(
+	CameraBuffer data, 
+	D3D12_VIEWPORT viewport, 
+	D3D12_RECT scissorRect, 
+	ID3D12Resource* pUploadHeap, 
+	unsigned char* pUploadHeapAdressPointer,
+	ID3D12Resource** ppBufferMatrixHeap, 
+	unsigned int iBufferCount, 
+	ID3D12DescriptorHeap* pDH)
 {
 	m_data = data;
 	m_viewport = viewport;
 	m_rectscissor = scissorRect;
 	m_iBufferCount = iBufferCount;
-	m_ppBufferMatrix = ppBufferMatrix;
-	m_ppBufferAdressPointers = ppBufferAdressPointers;
+	m_ppBufferMatrixHeap = ppBufferMatrixHeap;
+	m_pUploadHeap = pUploadHeap;
+	m_pUploadHeapAdressPointer = pUploadHeapAdressPointer;
 	m_pDH = pDH;
 }
 
@@ -20,18 +27,20 @@ Camera::~Camera()
 	D3D12_RANGE rangeRead = {};
 	for (unsigned int i = 0; i < m_iBufferCount; ++i)
 	{
-		m_ppBufferMatrix[i]->Unmap(0, &rangeRead);
-		SAFE_RELEASE(m_ppBufferMatrix[i]);
+	//	m_ppBufferMatrixHeap[i]->Unmap(0, &rangeRead);
+		SAFE_RELEASE(m_ppBufferMatrixHeap[i]);
 	}
+
+	
+	m_pUploadHeap->Unmap(0, &rangeRead);
+	delete m_pUploadHeapAdressPointer;
+	SAFE_RELEASE(m_pUploadHeap);
 	SAFE_RELEASE(m_pDH);
-	delete[] m_ppBufferMatrix;
-	delete[] m_ppBufferAdressPointers;
+	delete[] m_ppBufferMatrixHeap;
 }
 
-void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex)
+void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex, ID3D12GraphicsCommandList* pCopyCL)
 {
-	DirectX::XMMATRIX worldMatrix;
-
 	if (pInput->IsKeyDown(pInput->W))
 	{
 		m_data.position.x += m_data.forward.x * dDeltaTime;
@@ -72,14 +81,16 @@ void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex
 	m_data.viewMat = DirectX::XMMatrixTranspose(DirectX::XMMatrixLookToLH(DirectX::XMLoadFloat3(&m_data.position), DirectX::XMLoadFloat3(&m_data.forward), DirectX::XMLoadFloat3(&m_data.up)));
 	m_data.vpMat = DirectX::XMMatrixMultiply(m_data.projMat, m_data.viewMat);
 
-	memcpy(m_ppBufferAdressPointers[iBufferIndex], &m_data, sizeof(CameraBuffer));
+	memcpy(m_pUploadHeapAdressPointer, &m_data, sizeof(CameraBuffer));
+	
+	pCopyCL->CopyResource(m_ppBufferMatrixHeap[iBufferIndex], m_pUploadHeap);
 }
 
 void Camera::BindCamera(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
 {
 	pCL->RSSetViewports(1, &m_viewport);
 	pCL->RSSetScissorRects(1, &m_rectscissor);
-	pCL->SetGraphicsRootConstantBufferView(0, m_ppBufferMatrix[iBufferIndex]->GetGPUVirtualAddress());
+	pCL->SetGraphicsRootConstantBufferView(0, m_ppBufferMatrixHeap[iBufferIndex]->GetGPUVirtualAddress());
 }
 
 
