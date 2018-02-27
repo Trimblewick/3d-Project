@@ -312,7 +312,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		&bufferDesc,
-		D3D12_RESOURCE_STATE_GENERIC_READ,
+		D3D12_RESOURCE_STATE_COPY_DEST,
 		nullptr,
 		IID_PPV_ARGS(&pVBuffer));
 
@@ -436,65 +436,74 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	int iBufferSize = sizeof(iList);
 
 	D3D12_HEAP_PROPERTIES iBufferProperties;
-	uploadHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-	uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	uploadHeapProperties.VisibleNodeMask = 1;
-	uploadHeapProperties.CreationNodeMask = 1;
+	iBufferProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	iBufferProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	iBufferProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	iBufferProperties.VisibleNodeMask = 1;
+	iBufferProperties.CreationNodeMask = 1;
 
 	D3D12_RESOURCE_DESC iBufferDesc;
-	uploadDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	uploadDesc.Alignment = 0;
-	uploadDesc.Width = (iBufferSize + 255) & ~255; //Bytes!
-	uploadDesc.Height = 1;
-	uploadDesc.DepthOrArraySize = 1;
-	uploadDesc.MipLevels = 1;
-	uploadDesc.Format = DXGI_FORMAT_UNKNOWN;
-	uploadDesc.SampleDesc.Count = 1;
-	uploadDesc.SampleDesc.Quality = 0;
-	uploadDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	uploadDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	iBufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	iBufferDesc.Alignment = 0;
+	iBufferDesc.Width = (iBufferSize + 255) & ~255; //Bytes!
+	iBufferDesc.Height = 1;
+	iBufferDesc.DepthOrArraySize = 1;
+	iBufferDesc.MipLevels = 1;
+	iBufferDesc.Format = DXGI_FORMAT_UNKNOWN;
+	iBufferDesc.SampleDesc.Count = 1;
+	iBufferDesc.SampleDesc.Quality = 0;
+	iBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	iBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
 	ID3D12Resource* pIBuffer;
-	this->GetDevice()->CreateCommittedResource(
-		&iBufferProperties, // a default heap
-		D3D12_HEAP_FLAG_NONE, // no flags
-		&iBufferDesc, // resource description for a buffer
-		D3D12_RESOURCE_STATE_COPY_DEST, // start in the copy destination state
-		nullptr, // optimized clear value must be null for this type of resource
+	hr = this->GetDevice()->CreateCommittedResource(
+		&iBufferProperties,
+		D3D12_HEAP_FLAG_NONE, 
+		&iBufferDesc,
+		D3D12_RESOURCE_STATE_COPY_DEST,
+		nullptr,
 		IID_PPV_ARGS(&pIBuffer));
+
+	if (FAILED(hr))
+	{
+		return 0;
+	}
 
 	pIBuffer->SetName(L"IBuffer Resource Heap");
 
 	D3D12_HEAP_PROPERTIES iUploadHeapProperties;
-	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
-	uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	uploadHeapProperties.VisibleNodeMask = 1;
-	uploadHeapProperties.CreationNodeMask = 1;
+	iUploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	iUploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	iUploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	iUploadHeapProperties.VisibleNodeMask = 1;
+	iUploadHeapProperties.CreationNodeMask = 1;
 
 	D3D12_RESOURCE_DESC iUploadDesc;
-	uploadDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	uploadDesc.Alignment = 0;
-	uploadDesc.Width = (iBufferSize + 255) & ~255; //Bytes!
-	uploadDesc.Height = 1;
-	uploadDesc.DepthOrArraySize = 1;
-	uploadDesc.MipLevels = 1;
-	uploadDesc.Format = DXGI_FORMAT_UNKNOWN;
-	uploadDesc.SampleDesc.Count = 1;
-	uploadDesc.SampleDesc.Quality = 0;
-	uploadDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	uploadDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+	iUploadDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	iUploadDesc.Alignment = 0;
+	iUploadDesc.Width = (iBufferSize + 255) & ~255; //Bytes!
+	iUploadDesc.Height = 1;
+	iUploadDesc.DepthOrArraySize = 1;
+	iUploadDesc.MipLevels = 1;
+	iUploadDesc.Format = DXGI_FORMAT_UNKNOWN;
+	iUploadDesc.SampleDesc.Count = 1;
+	iUploadDesc.SampleDesc.Quality = 0;
+	iUploadDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	iUploadDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
 	ID3D12Resource* pIBUpload;
-	this->GetDevice()->CreateCommittedResource(
-		&iUploadHeapProperties, // a default heap
-		D3D12_HEAP_FLAG_NONE, // no flags
-		&iUploadDesc, // resource description for a buffer
-		D3D12_RESOURCE_STATE_COPY_DEST, // start in the copy destination state
-		nullptr, // optimized clear value must be null for this type of resource
+	hr = this->GetDevice()->CreateCommittedResource(
+		&iUploadHeapProperties,
+		D3D12_HEAP_FLAG_NONE,
+		&iUploadDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
 		IID_PPV_ARGS(&pIBUpload));
 
+	if (FAILED(hr))
+	{
+		return 0;
+	}
 	pIBUpload->SetName(L"IBuffer Upload Heap");
 
 	D3D12_SUBRESOURCE_DATA indexData = {};
