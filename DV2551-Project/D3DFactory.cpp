@@ -428,10 +428,153 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 
 	//Index buffer-----------------------
 
+	DWORD iList[] = {
+		0, 1, 2, // first triangle
+		0, 3, 1 // second triangle
+	};
 
+	int iBufferSize = sizeof(iList);
+
+	D3D12_HEAP_PROPERTIES iBufferProperties;
+	uploadHeapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
+	uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	uploadHeapProperties.VisibleNodeMask = 1;
+	uploadHeapProperties.CreationNodeMask = 1;
+
+	D3D12_RESOURCE_DESC iBufferDesc;
+	uploadDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	uploadDesc.Alignment = 0;
+	uploadDesc.Width = (iBufferSize + 255) & ~255; //Bytes!
+	uploadDesc.Height = 1;
+	uploadDesc.DepthOrArraySize = 1;
+	uploadDesc.MipLevels = 1;
+	uploadDesc.Format = DXGI_FORMAT_UNKNOWN;
+	uploadDesc.SampleDesc.Count = 1;
+	uploadDesc.SampleDesc.Quality = 0;
+	uploadDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	uploadDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	ID3D12Resource* pIBuffer;
+	this->GetDevice()->CreateCommittedResource(
+		&iBufferProperties, // a default heap
+		D3D12_HEAP_FLAG_NONE, // no flags
+		&iBufferDesc, // resource description for a buffer
+		D3D12_RESOURCE_STATE_COPY_DEST, // start in the copy destination state
+		nullptr, // optimized clear value must be null for this type of resource
+		IID_PPV_ARGS(&pIBuffer));
+
+	pIBuffer->SetName(L"IBuffer Resource Heap");
+
+	D3D12_HEAP_PROPERTIES iUploadHeapProperties;
+	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
+	uploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	uploadHeapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	uploadHeapProperties.VisibleNodeMask = 1;
+	uploadHeapProperties.CreationNodeMask = 1;
+
+	D3D12_RESOURCE_DESC iUploadDesc;
+	uploadDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	uploadDesc.Alignment = 0;
+	uploadDesc.Width = (iBufferSize + 255) & ~255; //Bytes!
+	uploadDesc.Height = 1;
+	uploadDesc.DepthOrArraySize = 1;
+	uploadDesc.MipLevels = 1;
+	uploadDesc.Format = DXGI_FORMAT_UNKNOWN;
+	uploadDesc.SampleDesc.Count = 1;
+	uploadDesc.SampleDesc.Quality = 0;
+	uploadDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	uploadDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	ID3D12Resource* pIBUpload;
+	this->GetDevice()->CreateCommittedResource(
+		&iUploadHeapProperties, // a default heap
+		D3D12_HEAP_FLAG_NONE, // no flags
+		&iUploadDesc, // resource description for a buffer
+		D3D12_RESOURCE_STATE_COPY_DEST, // start in the copy destination state
+		nullptr, // optimized clear value must be null for this type of resource
+		IID_PPV_ARGS(&pIBUpload));
+
+	pIBUpload->SetName(L"IBuffer Upload Heap");
+
+	D3D12_SUBRESOURCE_DATA indexData = {};
+	indexData.pData = reinterpret_cast<BYTE*>(iList); // pointer to our index array
+	indexData.RowPitch = iBufferSize; // size of all our index buffer
+	indexData.SlicePitch = iBufferSize; // also the size of our index buffer
+
+	RequiredSize = 0;
+	NumSubresources = 1;
+	FirstSubresource = 0;
+	IntermediateOffset = 0;
+
+	MemToAlloc = static_cast<UINT64>(sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64)) * NumSubresources;
+	if (MemToAlloc > SIZE_MAX)
+	{
+		return 0;
+	}
+	pMem = HeapAlloc(GetProcessHeap(), 0, static_cast<SIZE_T>(MemToAlloc));
+	if (pMem == NULL)
+	{
+		return 0;
+	}
+	pLayouts = reinterpret_cast<D3D12_PLACED_SUBRESOURCE_FOOTPRINT*>(pMem);
+	pRowSizesInBytes = reinterpret_cast<UINT64*>(pLayouts + NumSubresources);
+	pNumRows = reinterpret_cast<UINT*>(pRowSizesInBytes + NumSubresources);
+	//pVBuffer is dest.
+	pDevice;
+	pIBuffer->GetDevice(__uuidof(*pDevice), reinterpret_cast<void**>(&pDevice));
+	pDevice->GetCopyableFootprints(&bufferDesc, FirstSubresource, NumSubresources, IntermediateOffset, pLayouts, pNumRows, pRowSizesInBytes, &RequiredSize);
+	pDevice->Release();
+
+	if (iUploadDesc.Dimension != D3D12_RESOURCE_DIMENSION_BUFFER ||
+		iUploadDesc.Width < RequiredSize + pLayouts[0].Offset ||
+		RequiredSize >(SIZE_T) - 1 ||
+		(iBufferDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER &&
+		(FirstSubresource != 0 || NumSubresources != 1)))
+	{
+		return 0;
+	}
+
+	pData;
+	hr = pIBUpload->Map(0, NULL, reinterpret_cast<void**>(&pData));
+	if (FAILED(hr))
+	{
+		return 0;
+	}
+	for (UINT i = 0; i < NumSubresources; ++i)
+	{
+		if (pRowSizesInBytes[i] >(SIZE_T)-1) return 0;
+		D3D12_MEMCPY_DEST DestData = { &indexData + pLayouts[i].Offset, pLayouts[i].Footprint.RowPitch, pLayouts[i].Footprint.RowPitch * pNumRows[i] };
+		for (UINT z = 0; z < pLayouts[i].Footprint.Depth; ++z)
+		{
+			//BYTE* pDestSlice = reinterpret_cast<BYTE*>(DestData.pData) + DestData.SlicePitch * z;
+			const BYTE* pSrcSlice = reinterpret_cast<const BYTE*>(indexData.pData) + indexData.SlicePitch * z;
+			for (UINT y = 0; y < pNumRows[i]; ++y)
+			{
+				memcpy(pData + DestData.RowPitch * y,
+					pSrcSlice + indexData.RowPitch * y,
+					(SIZE_T)pRowSizesInBytes[i]);
+			}
+		}
+	}
+	pIBUpload->Unmap(0, NULL);
+
+	D3D12_BOX SrcBox2;
+	SrcBox2.left = UINT(pLayouts[0].Offset);
+	SrcBox2.right = UINT(pLayouts[0].Offset + pLayouts[0].Footprint.Width);
+	SrcBox2.top = 0;
+	SrcBox2.front = 0;
+	SrcBox2.bottom = 1;
+	SrcBox2.back = 1;
+	pCmdList->CopyBufferRegion(pIBuffer, 0, pIBUpload, pLayouts[0].Offset, pLayouts[0].Footprint.Width);
+
+	D3D12_INDEX_BUFFER_VIEW ibView;
+	ibView.BufferLocation = pIBuffer->GetGPUVirtualAddress();
+	ibView.SizeInBytes = iBufferSize;
+	ibView.Format = DXGI_FORMAT_R32_UINT;
 
 	//-----------------------------------
 
-	return new Plane(16, pVBuffer, vbView);
+	return new Plane(16, pVBuffer, vbView, pIBuffer, ibView);
 }
 

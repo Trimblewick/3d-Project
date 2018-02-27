@@ -10,7 +10,7 @@ typedef union {
 class Plane
 {
 public:
-	Plane(unsigned int tileSize, ID3D12Resource* pVBuffer, D3D12_VERTEX_BUFFER_VIEW vertexBufferView);
+	Plane(unsigned int tileSize, ID3D12Resource* pVBuffer, D3D12_VERTEX_BUFFER_VIEW vertexBufferView, ID3D12Resource* pIBuffer, D3D12_INDEX_BUFFER_VIEW indexBufferView);
 	~Plane();
 
 	void bind(ID3D12GraphicsCommandList* pCL);
@@ -20,7 +20,6 @@ private:
 	std::vector<float4>				m_pVerts;
 
 	ID3D12DescriptorHeap*			m_pDHverts;
-	ID3D12Resource*					m_pVBuffer;
 	D3D12_ROOT_DESCRIPTOR_TABLE*	m_pDescriptorTable;
 
 	ID3D12Resource*					m_pVertexBuffer;
