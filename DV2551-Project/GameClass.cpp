@@ -21,17 +21,28 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount);
 	m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 5);
 
-	int nrOfVertices = 0; //change to nrOfVertices which we get from plane class
+	int nrOfVertices = 3; //change to nrOfVertices which we get from plane class
 	m_pBezierClass = m_pD3DFactory->CreateBezier(nrOfVertices);
 	m_pBezierClass->CalculateBezierVertices();
 
-	//Constant Buffer Descriptor, map to GPU registers
-	D3D12_DESCRIPTOR_RANGE cbvDescriptor;
-	cbvDescriptor.BaseShaderRegister = 0;
-	cbvDescriptor.NumDescriptors = 1; //only have 1 cb
-	cbvDescriptor.OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
-	cbvDescriptor.RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	//Constant Buffer Descriptor Range, map to GPU registers
+	D3D12_ROOT_DESCRIPTOR cbvDescriptor;
 	cbvDescriptor.RegisterSpace = 0;
+	cbvDescriptor.ShaderRegister = 0;
+
+	D3D12_ROOT_PARAMETER cbvRootParameter;
+	cbvRootParameter.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	cbvRootParameter.ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	cbvRootParameter.Descriptor = cbvDescriptor;
+	//cbvRootParameter.Constants ???
+
+	D3D12_ROOT_SIGNATURE_DESC cbvRootSigDesc;
+	cbvRootSigDesc.Flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_NONE;
+	cbvRootSigDesc.NumParameters = 1;
+	cbvRootSigDesc.pParameters = &cbvRootParameter;
+
+	m_pD3DFactory->CreateRS(&cbvRootSigDesc);
+
 
 	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);
 
@@ -188,7 +199,7 @@ void GameClass::CleanUp()
 void GameClass::Update(Input * input, double dDeltaTime)
 {
 	m_dDeltaTime = dDeltaTime;
-	m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
+	m_pBezierClass->CalculateBezierVertices(); //Calculates Bézier vertices
 	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
 	PrecentBackBuffer(pCLtest);
 }

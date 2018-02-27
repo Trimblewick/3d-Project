@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "BezierClass.h"
 
-//TODO: move root constants/paramters etc to factory, 
-//		make a bonstantCuffer function here that sends m_pBezierVertices to GPU to be used for offset calc,
-//		fill RootSig in D3DFactory
-//		set PSO in D3DFactory
+//TODO: Quick test bind cbuffer to shader and see if values get through 
+//		memcpy new cbuffer data in update loop every frame to cbuffer??
+//		
+//		
 
 BezierClass::BezierClass(/**/)
 {
