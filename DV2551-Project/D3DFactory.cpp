@@ -171,7 +171,7 @@ GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned
 	ID3D12GraphicsCommandList** ppCLs = new ID3D12GraphicsCommandList*[iNumberOfCLs];
 	ID3D12Fence** ppFences = new ID3D12Fence*[iNumberOfCLs];
 
-	for (int i = 0; i < iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < iNumberOfCLs; ++i)
 	{
 		ppCAs[i] = CreateCA(type);
 		ppCLs[i] = CreateCL(ppCAs[i], type);
@@ -201,19 +201,15 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 	data.up.y = 1.0f;
 	data.up.z = 0.0f;
 
-	DirectX::XMMATRIX tempViewMat = DirectX::XMMatrixTranspose(DirectX::XMMatrixLookToLH(DirectX::XMLoadFloat3(&data.position), DirectX::XMLoadFloat3(&data.forward), DirectX::XMLoadFloat3(&data.up)));
-	DirectX::XMMATRIX tempProjMat = DirectX::XMMatrixTranspose(DirectX::XMMatrixPerspectiveFovLH(45.0f*(DirectX::XM_PI / 180.0f), iWidthWindow / (float)iHeightWindow, 0.1f, 1000.0f));
-	DirectX::XMMATRIX tempVPMat = DirectX::XMMatrixMultiply(tempViewMat, tempProjMat);
-	
-	DirectX::XMStoreFloat4x4(&data.viewMat, tempViewMat);
-	DirectX::XMStoreFloat4x4(&data.projMat, tempProjMat);
-	DirectX::XMStoreFloat4x4(&data.vpMat, tempVPMat);
+	data.viewMat = DirectX::XMMatrixTranspose(DirectX::XMMatrixLookToLH(DirectX::XMLoadFloat3(&data.position), DirectX::XMLoadFloat3(&data.forward), DirectX::XMLoadFloat3(&data.up)));
+	data.projMat = DirectX::XMMatrixTranspose(DirectX::XMMatrixPerspectiveFovLH(45.0f*(DirectX::XM_PI / 180.0f), iWidthWindow / (float)iHeightWindow, 0.1f, 1000.0f));
+	data.vpMat = DirectX::XMMatrixMultiply(data.projMat, data.viewMat);
 
 	D3D12_VIEWPORT viewport;
 	viewport.TopLeftX = 0.0f;
 	viewport.TopLeftY = 0.0f;
-	viewport.MinDepth = 1.0f;
-	viewport.MaxDepth = 0.0f;
+	viewport.MinDepth = 0.0f;
+	viewport.MaxDepth = 1.0f;
 	viewport.Width = (float)iWidthWindow;
 	viewport.Height = (float)iHeightWindow;
 
@@ -328,7 +324,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
 	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
-	m_cbDesc.SizeInBytes = (64/*temp*/ * sizeof(float4) + 255) & ~255;
+	m_cbDesc.SizeInBytes = (3/*temp*/ * sizeof(float4) + 255) & ~255;
 	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
 
 	D3D12_RANGE range;
