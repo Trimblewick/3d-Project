@@ -197,7 +197,6 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	m_dDeltaTime = dDeltaTime;
 	m_pCamera->Update(pInput, dDeltaTime, iFrameIndex);
-	//m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
 	m_pBezierClass->UpdateBezierVertices(); //Calculates Bézier vertices
 	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
 	PresentBackBuffer(pCLtest);
@@ -238,7 +237,7 @@ void GameClass::PresentBackBuffer(ID3D12GraphicsCommandList* pCL)
 	m_pBezierClass->BindBezier(pCL, iFrameIndex);
 	pCL->SetPipelineState(tempPSO);
 	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	pCL->DrawInstanced(m_nrOfVertices, 1, 0, 0);
+	pCL->DrawInstanced(3, 1, 0, 0);
 
 	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
 	transition.pResource = m_ppRTV[iFrameIndex];

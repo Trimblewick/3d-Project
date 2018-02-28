@@ -23,6 +23,7 @@ BezierClass::~BezierClass()
 	m_pBezierVertices.clear();
 	SAFE_RELEASE(m_pConstantDescHeap);
 	SAFE_RELEASE(m_pConstantUploadHeap);
+	delete m_address;
 	//DELET THIS, hihi
 }
 
@@ -51,7 +52,7 @@ void BezierClass::CalculateBezierVertices()
 	m_pBezierVertices.push_back(test2);
 	m_pBezierVertices.push_back(test3);
 
-	memcpy(m_address, reinterpret_cast<void*>(&m_pBezierVertices), m_nrOfVertices * sizeof(float4));
+	memcpy(m_address, m_pBezierVertices.data(), m_nrOfVertices * sizeof(float4));
 
 	return;
 }
@@ -64,7 +65,7 @@ void BezierClass::UpdateBezierVertices()
 		//m_pBezierVertices[i].y = random value between ??? 0 and 10???
 	}
 
-	memcpy(m_address, reinterpret_cast<void*>(&m_pBezierVertices), m_nrOfVertices * sizeof(float4));
+	//memcpy(m_address, reinterpret_cast<void*>(&m_pBezierVertices), m_nrOfVertices * sizeof(float4));
 }
 
 void BezierClass::BindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)

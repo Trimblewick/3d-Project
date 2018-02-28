@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "D3DFactory.h"
-
 #include <wrl.h>
 
 D3DFactory::D3DFactory()
@@ -284,7 +283,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	D3D12_RESOURCE_DESC resourceDesc;
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	resourceDesc.Alignment = 0;
-	resourceDesc.Width = (nrOfVertices * sizeof(float4) + 255) & ~255;//nrOfVertices; //???
+	resourceDesc.Width = 65536;//(nrOfVertices * sizeof(float4) + 255) & ~255;//nrOfVertices; //???
 	resourceDesc.Height = 1;	
 	resourceDesc.DepthOrArraySize = 1; 
 	resourceDesc.MipLevels = 1;
@@ -312,7 +311,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
 	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
-	m_cbDesc.SizeInBytes = (nrOfVertices * sizeof(float4) +255) & ~255; //Forces SizeInBytes to be multiple of 256, which device requires for CreateCBV?
+	m_cbDesc.SizeInBytes = /*sizeof(m_pBezierVertices) * sizeof(float4);*/(nrOfVertices * sizeof(float4) +255) & ~255; //Forces SizeInBytes to be multiple of 256, which device requires for CreateCBV?
 
 	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
 
@@ -320,7 +319,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 	uint8_t* address;
 	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address)); 
-	memcpy(address, reinterpret_cast<void*>(&m_pBezierVertices), nrOfVertices * sizeof(float4));
+	memcpy(address, m_pBezierVertices.data(), /*sizeof(m_pBezierVertices)*sizeof(float4)*/nrOfVertices * sizeof(float4));
 
 	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, nrOfVertices);
 	
