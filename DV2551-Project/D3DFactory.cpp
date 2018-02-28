@@ -365,7 +365,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 		{ -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f },
 		{ 0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f }
 	};*/
-	float4 *vList = plane->GetVertices().data();
+	float4* vList = plane->GetVertices().data();
 	int vBufferSize = sizeof(float) * 4 /*float4*/ * size * size; //sizeof(vList);
 
 	//Vertex Buffer ---------------------------------

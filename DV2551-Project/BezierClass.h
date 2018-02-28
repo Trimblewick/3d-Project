@@ -2,17 +2,11 @@
 #include <d3d12.h>
 #include <d3dcompiler.h>
 #include <assert.h>
-
+#include "common.h"
+#include <vector>
 //CB: Create descriptorHeap, 
 
 //Device (from D3DFactory needed for createCommitedResource, 
-struct float4
-{
-	float x;
-	float y;
-	float z;
-	float w;
-};
 
 class BezierClass
 {

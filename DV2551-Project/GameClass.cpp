@@ -23,8 +23,6 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 5);
 
 
-
-
 	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);
 
 	//set up swapchain with the graphics highway
@@ -117,21 +115,18 @@ bool GameClass::Initialize(Window* pWindow)
 	D3D12_ROOT_SIGNATURE_DESC descRS = {};
 	descRS.NumParameters = 2;
 	descRS.pParameters = rootParameters;
-	descRS.NumParameters = 1;
-	descRS.pParameters = &p;
-
 	descRS.Flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	
 
 	tempRS = m_pD3DFactory->CreateRS(&descRS);
 
-	ID3DBlob* pVSblob = m_pD3DFactory->CompileShader(L"VertexShader.hlsl", "vs_5_1");
+	ID3DBlob* pVSblob = m_pD3DFactory->CompileShader(L"VertexShader2.hlsl", "vs_5_1");
 	ID3DBlob* pPSblob = m_pD3DFactory->CompileShader(L"PixelShader.hlsl", "ps_5_1");
 
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] =
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		//{ "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 16, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc = {};
@@ -245,7 +240,7 @@ ID3D12GraphicsCommandList* GameClass::ClearBackBuffer()
 }
 
 bool waduheck = false;
-void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
+void GameClass::PresentBackBuffer(ID3D12GraphicsCommandList* pCL)
 {
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 

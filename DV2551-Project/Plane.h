@@ -1,11 +1,7 @@
 #pragma once
 #include <vector>
 #include <d3d12.h>
-
-typedef union {
-	struct { float x, y, z, w; };
-	struct { float r, g, b, a; };
-} float4;
+#include "common.h"
 
 class Plane
 {
