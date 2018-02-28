@@ -274,7 +274,17 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	ID3D12Resource* pUploadCB = nullptr;
 
-	float4 test;
+	for (int i = 0; i < nrOfVertices; ++i)
+	{
+		float4 test;
+		test.x = 0.0f;
+		test.y = 0.0f;
+		test.z = 1.0f;
+		test.w = 1.0f;
+		m_pBezierVertices.push_back(test);
+	}
+
+	/*float4 test;
 	test.x = -5.0f;
 	test.y = 0.0f;
 	test.z = 10.0f;
@@ -294,7 +304,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 	m_pBezierVertices.push_back(test);
 	m_pBezierVertices.push_back(test2);
-	m_pBezierVertices.push_back(test3);
+	m_pBezierVertices.push_back(test3);*/
 
 	//Set resource desc
 	D3D12_RESOURCE_DESC resourceDesc;
@@ -337,9 +347,8 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	uint8_t* address;
 	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address)); 
 	memcpy(address, reinterpret_cast<void*>(&m_pBezierVertices), nrOfVertices * sizeof(float4));
-	pUploadCB->Unmap(0, &range);
 
-	BezierClass* pB = new BezierClass(pDH, pUploadCB);
+	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, nrOfVertices);
 	
 	return pB;
 }

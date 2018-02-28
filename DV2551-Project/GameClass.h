@@ -19,7 +19,7 @@ public:
 
 	void							Update(Input* input, double dDeltaTime);
 	ID3D12GraphicsCommandList*		ClearBackBuffer();
-	void							PrecentBackBuffer(ID3D12GraphicsCommandList* pCL);
+	void							PresentBackBuffer(ID3D12GraphicsCommandList* pCL);
 	void							Frame();
 
 
@@ -29,6 +29,7 @@ private:
 	static const unsigned int		m_iBackBufferCount = 3;
 	double							m_dDeltaTime;
 	float							m_pClearColor[4];
+	int								m_nrOfVertices;
 
 
 	D3DFactory*						m_pD3DFactory;

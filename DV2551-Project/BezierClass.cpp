@@ -10,45 +10,26 @@ BezierClass::BezierClass(/**/)
 {
 }
 
-BezierClass::BezierClass(ID3D12DescriptorHeap * pDH, ID3D12Resource* pResource)
+BezierClass::BezierClass(ID3D12DescriptorHeap * pDH, ID3D12Resource* pResource, uint8_t* address, int nrOfVertices)
 {
-	float4 temp;
-	temp.x = 1.0f;
-	temp.y = 0.0f;
-	temp.z = 0.0f;
-	temp.w = 0.0f;
-
-	m_nrOfVertices = 3; //update
-
-	m_pBezierVertices.push_back(temp);
-	m_pPreviouslyCalculatedBezierVertices.push_back(temp);
-
+	m_nrOfVertices = nrOfVertices;
 	m_pConstantDescHeap = pDH;
 	m_pConstantUploadHeap = pResource;
+	m_address = address;
 }
 
 BezierClass::~BezierClass()
 {
 	m_pBezierVertices.clear();
-	m_pPreviouslyCalculatedBezierVertices.clear();
 	SAFE_RELEASE(m_pConstantDescHeap);
 	SAFE_RELEASE(m_pConstantUploadHeap);
 	//DELET THIS, hihi
 }
 
-void BezierClass::CalculateBezierVertices(/*&commandList*/)
+void BezierClass::CalculateBezierVertices()
 {
-	//for (int i = 0; i < m_nrOfVertices; i++)
-	//{
-	//	//Change line below to actual Bézier calculationusing previous frame's bezier point
-	//	float4 previousBezierWithOffset = m_pPreviouslyCalculatedBezierVertices[i]; //previousBezierWithOffset will be m_pPreviouslyCalculatedBezierVertices[i] with an offset
 
-	//	m_pBezierVertices.push_back(previousBezierWithOffset);
-	//	m_pPreviouslyCalculatedBezierVertices[i] = previousBezierWithOffset; //update for next frame
-	//}
-
-	//m_pPreviouslyCalculatedBezierVertices = m_pBezierVertices;
-
+	//Change entire function to take vector containing vertices from Plane() and offset Y value randomly then pushback and memcpy
 	float4 test;
 	test.x = -5.0f;
 	test.y = 0.0f;
@@ -71,22 +52,23 @@ void BezierClass::CalculateBezierVertices(/*&commandList*/)
 	m_pBezierVertices.push_back(test2);
 	m_pBezierVertices.push_back(test3);
 
+	memcpy(m_address, reinterpret_cast<void*>(&m_pBezierVertices), m_nrOfVertices * sizeof(float4));
+
 	return;
+}
+
+void BezierClass::UpdateBezierVertices()
+{
+	for (int i = 0; i < m_nrOfVertices; ++i)
+	{
+		m_pBezierVertices[i] = m_pBezierVertices[i]; //change to a random Y factor, something like comment below this line
+		//m_pBezierVertices[i].y = random value between ??? 0 and 10???
+	}
+
+	memcpy(m_address, reinterpret_cast<void*>(&m_pBezierVertices), m_nrOfVertices * sizeof(float4));
 }
 
 void BezierClass::BindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
 {
-	//Are these two needed? In that case send them as parameters from GameClass
-	//pCL->RSSetViewports(1, &m_viewport);
-	//pCL->RSSetScissorRects(1, &m_rectscissor);
-
-	//memcpy every frame? How do we update constantUploadHeap for command list otherwise with newly calculated values?
-	D3D12_RANGE range = { 0,0 }; //Entire range
-
-	uint8_t* address;
-	m_pConstantUploadHeap->Map(0, &range, reinterpret_cast<void**>(&address));
-	memcpy(address, reinterpret_cast<void*>(&m_pBezierVertices), m_nrOfVertices * sizeof(float4));
-	m_pConstantUploadHeap->Unmap(0, &range);
-
 	pCL->SetGraphicsRootConstantBufferView(1, m_pConstantUploadHeap->GetGPUVirtualAddress()); //Bind to shader register 
 }
