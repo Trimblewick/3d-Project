@@ -265,7 +265,6 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 	return new Camera(data, viewport, rectScissor, ppBufferMatrix, ppBufferAdressPointers, iBufferCount, pDH);
 }
 
-
 BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 {
 	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
