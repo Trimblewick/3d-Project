@@ -4,7 +4,7 @@ struct VS_OUT
 	float4 Col : COLOR;
 };
 
-float4 main(VS_OUT input) : SV_TARGET
+float4 main() : SV_TARGET
 {
-	return input.Col;
+	return float4(1, 1, 1, 1);
 }

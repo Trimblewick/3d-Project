@@ -271,8 +271,9 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 {
 	int size = 16;
+	Plane* plane = new Plane(size);
 
-	struct Vertex
+	/*struct Vertex
 	{
 		float4 position;
 		float4 color;
@@ -282,8 +283,9 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 		{ 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f },
 		{ -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f },
 		{ 0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f }
-	};
-	int vBufferSize = sizeof(vList);
+	};*/
+	float4 *vList = plane->GetVertices().data();
+	int vBufferSize = sizeof(float) * 4 /*float4*/ * size * size; //sizeof(vList);
 
 	//Vertex Buffer ---------------------------------
 
@@ -422,18 +424,19 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 
 	D3D12_VERTEX_BUFFER_VIEW vbView;
 	vbView.BufferLocation = pVBuffer->GetGPUVirtualAddress();
-	vbView.StrideInBytes = sizeof(Vertex);
+	vbView.StrideInBytes = sizeof(float4);
 	vbView.SizeInBytes = vBufferSize;
 	
 
 	//Index buffer-----------------------
 
-	DWORD iList[] = {
-		0, 1, 2, // first triangle
-		0, 3, 1 // second triangle
-	};
+	//DWORD iList[] = {
+	//	0, 1, 2, // first triangle
+	//	0, 3, 1 // second triangle
+	//};
 
-	int iBufferSize = sizeof(iList);
+	DWORD *iList = plane->GetIndices().data();
+	int iBufferSize = sizeof(DWORD) * 6 * size * (size - 1);//sizeof(iList);
 
 	D3D12_HEAP_PROPERTIES iBufferProperties;
 	iBufferProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
@@ -584,6 +587,11 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 
 	//-----------------------------------
 
-	return new Plane(16, pVBuffer, vbView, pIBuffer, ibView);
+	plane->SetVertexBuffer(pVBuffer);
+	plane->SetVertexBufferView(vbView);
+	plane->SetIndexBuffer(pIBuffer);
+	plane->SetIndexBufferView(ibView);
+
+	return plane;
 }
 

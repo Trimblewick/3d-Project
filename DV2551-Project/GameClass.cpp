@@ -96,7 +96,7 @@ bool GameClass::Initialize(Window* pWindow)
 
 	tempRS = m_pD3DFactory->CreateRS(&descRS);
 
-	ID3DBlob* pVSblob = m_pD3DFactory->CompileShader(L"VertexShader2.hlsl", "vs_5_1");
+	ID3DBlob* pVSblob = m_pD3DFactory->CompileShader(L"VertexShader.hlsl", "vs_5_1");
 	ID3DBlob* pPSblob = m_pD3DFactory->CompileShader(L"PixelShader.hlsl", "ps_5_1");
 
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] =
