@@ -5,6 +5,8 @@
 #include <d3dcompiler.h>
 #include "GPUHighway.h"
 #include "Camera.h"
+#include "BezierClass.h"
+
 #include "Plane.h"
 
 class D3DFactory
@@ -26,9 +28,12 @@ public:
 	ID3DBlob*								CompileShader(LPCWSTR filePath, LPCSTR shadermodel);
 	GPUHighway*								CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCLs);
 	Camera*									CreateCamera(unsigned int iBufferCount, long iWidthWindow, long iHeightWindow);
+	BezierClass*							CreateBezier(int nrOfVertices);
 	Plane*									CreatePlane(ID3D12GraphicsCommandList* pCmdList);
+
 
 private:
 	IDXGIFactory4*							m_pDXGIFactory;
 	ID3D12Device*							m_pDevice;
+	std::vector<float4>						m_pBezierVertices;
 };

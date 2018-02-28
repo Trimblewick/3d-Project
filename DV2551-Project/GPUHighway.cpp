@@ -18,7 +18,7 @@ GPUHighway::GPUHighway(D3D12_COMMAND_LIST_TYPE type, ID3D12CommandQueue* pCQ, ID
 	m_pFenceValues = new size_t[iNumberOfCLs];
 	m_pFenceLocked = new bool[iNumberOfCLs];
 
-	for (int i = 0; i < iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < iNumberOfCLs; ++i)
 	{
 		m_pCLLock[i] = i;
 		m_pFenceValues[i] = 0;
@@ -32,7 +32,7 @@ GPUHighway::~GPUHighway()
 {
 	WaitForAllFences();
 
-	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		SAFE_RELEASE(m_ppCAs[i]);
 		SAFE_RELEASE(m_ppCLs[i]);
@@ -58,7 +58,7 @@ ID3D12CommandQueue* GPUHighway::GetCQ()
 void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 {
 	int iLock = -1;
-	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (m_ppCLs[i] == pCL)
 		{
@@ -68,7 +68,7 @@ void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 	}
 	assert(iLock > -1);//cant be queued in this highway
 
-	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (!m_pFenceLocked[i])
 		{
@@ -82,7 +82,7 @@ void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 ID3D12GraphicsCommandList* GPUHighway::GetFreshCL()
 {
 	ID3D12GraphicsCommandList* pCL = nullptr;
-	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (m_pCLLock[i] == i)
 		{
@@ -99,16 +99,16 @@ ID3D12GraphicsCommandList* GPUHighway::GetFreshCL()
 int GPUHighway::ExecuteCQ()
 {
 	int index = -1;
-	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (!m_pFenceLocked[i])
 		{
-			m_pCQ->ExecuteCommandLists(m_ppCLQ[i].size(), m_ppCLQ[i].data());
+			m_pCQ->ExecuteCommandLists((unsigned int)m_ppCLQ[i].size(), m_ppCLQ[i].data());
 			m_ppCLQ[i].clear();
 		}
 	}
 	
-	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (!m_pFenceLocked[i])
 		{
@@ -144,7 +144,7 @@ void GPUHighway::Wait(int index)
 
 void GPUHighway::WaitForAllFences()
 {
-	for (int i = 0; i < m_iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (m_pFenceLocked[i])
 		{

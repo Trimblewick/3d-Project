@@ -4,6 +4,7 @@
 #include "D3DFactory.h"
 #include "GPUHighway.h"
 #include "Window.h"
+#include "BezierClass.h"
 #include "Plane.h"
 
 class GameClass
@@ -32,7 +33,9 @@ private:
 
 	D3DFactory*						m_pD3DFactory;
 	GPUHighway*						m_pGraphicsHighway;
+	GPUHighway*						m_pCopyHighway;
 	Camera*							m_pCamera;
+	BezierClass*					m_pBezierClass;
 	Plane*							m_pPlane;
 
 	IDXGISwapChain3*				m_pSwapChain;

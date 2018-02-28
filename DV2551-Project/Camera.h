@@ -9,9 +9,9 @@ class Camera
 public:
 	struct CameraBuffer
 	{
-		DirectX::XMFLOAT4X4 vpMat;
-		DirectX::XMFLOAT4X4 viewMat;
-		DirectX::XMFLOAT4X4 projMat;
+		DirectX::XMMATRIX vpMat;
+		DirectX::XMMATRIX viewMat;
+		DirectX::XMMATRIX projMat;
 		DirectX::XMFLOAT3   position;
 		float pad;
 		DirectX::XMFLOAT3	forward;

@@ -20,6 +20,13 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pD3DFactory = new D3DFactory();
 	
 	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount);
+	m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 5);
+
+	int nrOfVertices = 0; //change to nrOfVertices which we get from plane class
+	m_pBezierClass = m_pD3DFactory->CreateBezier(nrOfVertices);
+	m_pBezierClass->CalculateBezierVertices();
+
+	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);
 
 	//set up swapchain with the graphics highway
 	DXGI_MODE_DESC descMode = {};
@@ -90,7 +97,17 @@ bool GameClass::Initialize(Window* pWindow)
 	descRasterizer.ForcedSampleCount = 0;
 	descRasterizer.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
+	D3D12_ROOT_DESCRIPTOR d = {};
+
+	D3D12_ROOT_PARAMETER p = {};
+	p.Descriptor = d;
+	p.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	p.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
 	D3D12_ROOT_SIGNATURE_DESC descRS = {};
+	descRS.NumParameters = 1;
+	descRS.pParameters = &p;
+
 	descRS.Flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	
 
@@ -130,18 +147,6 @@ bool GameClass::Initialize(Window* pWindow)
 	SAFE_RELEASE(pVSblob);
 	SAFE_RELEASE(pPSblob);
 
-	m_viewport.TopLeftX = 0;
-	m_viewport.TopLeftY = 0;
-	m_viewport.Width = pWindow->GetWidth();
-	m_viewport.Height = pWindow->GetHeight();
-	m_viewport.MinDepth = 0.0f;
-	m_viewport.MaxDepth = 1.0f;
-
-	m_rectScissor.left = (long)0;
-	m_rectScissor.top = (long)0;
-	m_rectScissor.right = (long)pWindow->GetWidth();
-	m_rectScissor.bottom = (long)pWindow->GetHeight();
-
 	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
 
 	return true;
@@ -159,6 +164,11 @@ void GameClass::CleanUp()
 		delete m_pGraphicsHighway;
 		m_pGraphicsHighway = nullptr;
 	}
+	if (m_pCopyHighway)
+	{
+		delete m_pCopyHighway;
+		m_pCopyHighway = nullptr;
+	}
 	if (m_pCamera)
 	{
 		delete m_pCamera;
@@ -173,11 +183,21 @@ void GameClass::CleanUp()
 	SAFE_RELEASE(m_pDHRTV);
 	SAFE_RELEASE(tempPSO);
 	SAFE_RELEASE(tempRS);
+
+	if (m_pBezierClass)
+	{
+		delete m_pBezierClass;
+		m_pBezierClass = nullptr;
+	}
+
 }
 
-void GameClass::Update(Input * input, double dDeltaTime)
+void GameClass::Update(Input * pInput, double dDeltaTime)
 {
+	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	m_dDeltaTime = dDeltaTime;
+	m_pCamera->Update(pInput, dDeltaTime, iFrameIndex);
+	m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
 	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
 	PrecentBackBuffer(pCLtest);
 }
