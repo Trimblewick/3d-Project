@@ -269,6 +269,18 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 {
 	int size = 16;
 	Plane* plane = new Plane(size);
+	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	ID3D12Resource* pUploadCB = nullptr;
+
+	for (int i = 0; i < nrOfVertices; ++i)
+	{
+		float4 test;
+		test.x = 0.0f;
+		test.y = 0.0f;
+		test.z = 1.0f;
+		test.w = 1.0f;
+		m_pBezierVertices.push_back(test);
+	}
 
 	/*struct Vertex
 	{
@@ -471,6 +483,19 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 
 	pIBuffer->SetName(L"IBuffer Resource Heap");
 
+	//Set resource desc
+	D3D12_RESOURCE_DESC resourceDesc;
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Alignment = 0;
+	resourceDesc.Width = (nrOfVertices * sizeof(float4) + 255) & ~255;//nrOfVertices; //???
+	resourceDesc.Height = 1;	
+	resourceDesc.DepthOrArraySize = 1; 
+	resourceDesc.MipLevels = 1;
+	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 	D3D12_HEAP_PROPERTIES iUploadHeapProperties;
 	iUploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 	iUploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -568,6 +593,11 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	}
 	pIBUpload->Unmap(0, NULL);
 
+	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
+	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
+	m_cbDesc.SizeInBytes = (nrOfVertices * sizeof(float4) +255) & ~255; //Forces SizeInBytes to be multiple of 256, which device requires for CreateCBV?
+
+	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
 	D3D12_BOX SrcBox2;
 	SrcBox2.left = UINT(pLayouts[0].Offset);
 	SrcBox2.right = UINT(pLayouts[0].Offset + pLayouts[0].Footprint.Width);
@@ -577,6 +607,11 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	SrcBox2.back = 1;
 	pCmdList->CopyBufferRegion(pIBuffer, 0, pIBUpload, pLayouts[0].Offset, pLayouts[0].Footprint.Width);
 
+	D3D12_RANGE range = { 0,0 }; //Entire range
+
+	uint8_t* address;
+	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address)); 
+	memcpy(address, reinterpret_cast<void*>(&m_pBezierVertices), nrOfVertices * sizeof(float4));
 	D3D12_INDEX_BUFFER_VIEW ibView;
 	ibView.BufferLocation = pIBuffer->GetGPUVirtualAddress();
 	ibView.SizeInBytes = iBufferSize;
@@ -590,5 +625,8 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	plane->SetIndexBufferView(ibView);
 
 	return plane;
+	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, nrOfVertices);
+	
+	return pB;
 }
 

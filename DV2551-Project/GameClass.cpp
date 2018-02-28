@@ -22,9 +22,8 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount);
 	m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 5);
 
-	int nrOfVertices = 0; //change to nrOfVertices which we get from plane class
-	m_pBezierClass = m_pD3DFactory->CreateBezier(nrOfVertices);
-	m_pBezierClass->CalculateBezierVertices();
+
+
 
 	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);
 
@@ -97,14 +96,27 @@ bool GameClass::Initialize(Window* pWindow)
 	descRasterizer.ForcedSampleCount = 0;
 	descRasterizer.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
+	//Constant buffer RootSig setup
 	D3D12_ROOT_DESCRIPTOR d = {};
 
-	D3D12_ROOT_PARAMETER p = {};
-	p.Descriptor = d;
-	p.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	p.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	D3D12_ROOT_DESCRIPTOR cbvDescriptor;
+	cbvDescriptor.RegisterSpace = 0;
+	cbvDescriptor.ShaderRegister = 1;
+
+
+	D3D12_ROOT_PARAMETER rootParameters[2] = {};
+	rootParameters[0].Descriptor = d;
+	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
+	rootParameters[1].Descriptor = cbvDescriptor;
+
 
 	D3D12_ROOT_SIGNATURE_DESC descRS = {};
+	descRS.NumParameters = 2;
+	descRS.pParameters = rootParameters;
 	descRS.NumParameters = 1;
 	descRS.pParameters = &p;
 
@@ -148,6 +160,11 @@ bool GameClass::Initialize(Window* pWindow)
 	SAFE_RELEASE(pPSblob);
 
 	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
+
+	//Create Bezier
+	m_nrOfVertices = 3; //change to nrOfVertices which we get from plane class
+	m_pBezierClass = m_pD3DFactory->CreateBezier(m_nrOfVertices);
+	m_pBezierClass->CalculateBezierVertices(/*m_pPlaneClass->GetVertices()*/); //send vertices from plane and offset Y
 
 	return true;
 }
@@ -197,9 +214,10 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	m_dDeltaTime = dDeltaTime;
 	m_pCamera->Update(pInput, dDeltaTime, iFrameIndex);
-	m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
+	//m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
+	m_pBezierClass->UpdateBezierVertices(); //Calculates Bézier vertices
 	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
-	PrecentBackBuffer(pCLtest);
+	PresentBackBuffer(pCLtest);
 }
 
 ID3D12GraphicsCommandList* GameClass::ClearBackBuffer()
@@ -234,6 +252,7 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 	pCL->SetGraphicsRootSignature(tempRS);
 
 	m_pCamera->BindCamera(pCL, iFrameIndex);
+	m_pBezierClass->BindBezier(pCL, iFrameIndex);
 	pCL->SetPipelineState(tempPSO);
 	if (!waduheck)
 	{
