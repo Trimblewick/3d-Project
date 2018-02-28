@@ -265,10 +265,9 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 	return new Camera(data, viewport, rectScissor, ppBufferMatrix, ppBufferAdressPointers, iBufferCount, pDH);
 }
 
-Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
+
+BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 {
-	int size = 16;
-	Plane* plane = new Plane(size);
 	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	ID3D12Resource* pUploadCB = nullptr;
 
@@ -281,6 +280,80 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 		test.w = 1.0f;
 		m_pBezierVertices.push_back(test);
 	}
+
+	/*float4 test;
+	test.x = -5.0f;
+	test.y = 0.0f;
+	test.z = 10.0f;
+	test.w = 1.0f;
+
+	float4 test2;
+	test2.x = 0.0f;
+	test2.y = 5.0f;
+	test2.z = 10.0f;
+	test2.w = 1.0f;
+
+	float4 test3;
+	test3.x = 5.0f;
+	test3.y = 0.0f;
+	test3.z = 10.0f;
+	test3.w = 1.0f;
+
+	m_pBezierVertices.push_back(test);
+	m_pBezierVertices.push_back(test2);
+	m_pBezierVertices.push_back(test3);*/
+
+	//Set resource desc
+	D3D12_RESOURCE_DESC resourceDesc;
+	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	resourceDesc.Alignment = 0;
+	resourceDesc.Width = (nrOfVertices * sizeof(float4) + 255) & ~255;//nrOfVertices; //???
+	resourceDesc.Height = 1;
+	resourceDesc.DepthOrArraySize = 1;
+	resourceDesc.MipLevels = 1;
+	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
+	resourceDesc.SampleDesc.Count = 1;
+	resourceDesc.SampleDesc.Quality = 0;
+	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	//Set heap properties
+	D3D12_HEAP_PROPERTIES heapDesc;
+	heapDesc.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapDesc.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapDesc.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapDesc.CreationNodeMask = 1;
+	heapDesc.VisibleNodeMask = 1;
+
+	HRESULT hr = m_pDevice->CreateCommittedResource(
+		&heapDesc,
+		D3D12_HEAP_FLAG_NONE,
+		&resourceDesc,
+		D3D12_RESOURCE_STATE_GENERIC_READ,
+		nullptr,
+		IID_PPV_ARGS(&pUploadCB));
+
+	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
+	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
+	m_cbDesc.SizeInBytes = (nrOfVertices * sizeof(float4) + 255) & ~255; //Forces SizeInBytes to be multiple of 256, which device requires for CreateCBV?
+
+	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
+
+	D3D12_RANGE range = { 0,0 }; //Entire range
+
+	uint8_t* address;
+	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address));
+	memcpy(address, reinterpret_cast<void*>(&m_pBezierVertices), nrOfVertices * sizeof(float4));
+
+	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, nrOfVertices);
+
+	return pB;
+}
+
+Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
+{
+	int size = 16;
+	Plane* plane = new Plane(size);
 
 	/*struct Vertex
 	{
@@ -483,19 +556,6 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 
 	pIBuffer->SetName(L"IBuffer Resource Heap");
 
-	//Set resource desc
-	D3D12_RESOURCE_DESC resourceDesc;
-	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
-	resourceDesc.Alignment = 0;
-	resourceDesc.Width = (nrOfVertices * sizeof(float4) + 255) & ~255;//nrOfVertices; //???
-	resourceDesc.Height = 1;	
-	resourceDesc.DepthOrArraySize = 1; 
-	resourceDesc.MipLevels = 1;
-	resourceDesc.Format = DXGI_FORMAT_UNKNOWN;
-	resourceDesc.SampleDesc.Count = 1;
-	resourceDesc.SampleDesc.Quality = 0;
-	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
-	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 	D3D12_HEAP_PROPERTIES iUploadHeapProperties;
 	iUploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
 	iUploadHeapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
@@ -593,11 +653,6 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	}
 	pIBUpload->Unmap(0, NULL);
 
-	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
-	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
-	m_cbDesc.SizeInBytes = (nrOfVertices * sizeof(float4) +255) & ~255; //Forces SizeInBytes to be multiple of 256, which device requires for CreateCBV?
-
-	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
 	D3D12_BOX SrcBox2;
 	SrcBox2.left = UINT(pLayouts[0].Offset);
 	SrcBox2.right = UINT(pLayouts[0].Offset + pLayouts[0].Footprint.Width);
@@ -607,11 +662,6 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	SrcBox2.back = 1;
 	pCmdList->CopyBufferRegion(pIBuffer, 0, pIBUpload, pLayouts[0].Offset, pLayouts[0].Footprint.Width);
 
-	D3D12_RANGE range = { 0,0 }; //Entire range
-
-	uint8_t* address;
-	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address)); 
-	memcpy(address, reinterpret_cast<void*>(&m_pBezierVertices), nrOfVertices * sizeof(float4));
 	D3D12_INDEX_BUFFER_VIEW ibView;
 	ibView.BufferLocation = pIBuffer->GetGPUVirtualAddress();
 	ibView.SizeInBytes = iBufferSize;
@@ -625,8 +675,4 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	plane->SetIndexBufferView(ibView);
 
 	return plane;
-	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, nrOfVertices);
-	
-	return pB;
 }
-
