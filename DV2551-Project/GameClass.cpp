@@ -192,9 +192,12 @@ void GameClass::CleanUp()
 
 }
 
-void GameClass::Update(Input * input, double dDeltaTime)
+void GameClass::Update(Input * pInput, double dDeltaTime)
 {
+	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	m_dDeltaTime = dDeltaTime;
+	m_pCamera->Update(pInput, dDeltaTime, iFrameIndex);
+	//m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
 	m_pBezierClass->UpdateBezierVertices(); //Calculates Bézier vertices
 	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
 	PresentBackBuffer(pCLtest);
