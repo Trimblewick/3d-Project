@@ -270,7 +270,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	ID3D12Resource* pUploadCB = nullptr;
 
-	for (int i = 0; i < nrOfVertices; ++i)
+	for (int i = 0; i < nrOfVertices; ++i) //Change nrOfVertices to a factor of nrOfVertices which we decide, change below in function too
 	{
 		float4 test;
 		test.x = 0.0f;
@@ -279,28 +279,6 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 		test.w = 1.0f;
 		m_pBezierVertices.push_back(test);
 	}
-
-	/*float4 test;
-	test.x = -5.0f;
-	test.y = 0.0f;
-	test.z = 10.0f;
-	test.w = 1.0f;
-
-	float4 test2;
-	test2.x = 0.0f;
-	test2.y = 5.0f;
-	test2.z = 10.0f;
-	test2.w = 1.0f;
-
-	float4 test3;
-	test3.x = 5.0f;
-	test3.y = 0.0f;
-	test3.z = 10.0f;
-	test3.w = 1.0f;
-
-	m_pBezierVertices.push_back(test);
-	m_pBezierVertices.push_back(test2);
-	m_pBezierVertices.push_back(test3);*/
 
 	//Set resource desc
 	D3D12_RESOURCE_DESC resourceDesc;

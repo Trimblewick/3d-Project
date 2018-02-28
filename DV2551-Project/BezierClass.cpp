@@ -28,8 +28,7 @@ BezierClass::~BezierClass()
 
 void BezierClass::CalculateBezierVertices()
 {
-
-	//Change entire function to take vector containing vertices from Plane() and offset Y value randomly then pushback and memcpy
+	//Change entire function to take nrOfVertices from PLane(), choose a couple of them and offset them in Y
 	float4 test;
 	test.x = -5.0f;
 	test.y = 0.0f;
