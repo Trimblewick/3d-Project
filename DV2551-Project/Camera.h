@@ -28,9 +28,13 @@ public:
 
 	void									Update(Input* pInput, double dDeltaTime, unsigned int iBufferIndex, ID3D12GraphicsCommandList* pCopyCL);
 	void									BindCamera(ID3D12GraphicsCommandList* pCL, unsigned int iBufferIndex);
+	void									UnbindCamera(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex);
 private:
 	D3D12_VIEWPORT							m_viewport;
 	D3D12_RECT								m_rectscissor;
+
+	D3D12_RESOURCE_BARRIER*					m_pTransitionToConstant;
+	D3D12_RESOURCE_BARRIER*					m_pTransitionToCopyDest;
 
 	CameraBuffer							m_data;
 

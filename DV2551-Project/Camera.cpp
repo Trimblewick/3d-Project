@@ -15,11 +15,40 @@ Camera::Camera(
 	m_data = data;
 	m_viewport = viewport;
 	m_rectscissor = scissorRect;
-	m_iBufferCount = iBufferCount;
-	m_ppBufferMatrixHeap = ppBufferMatrixHeap;
 	m_pUploadHeap = pUploadHeap;
 	m_ppUploadHeapAdressPointer = ppUploadHeapAdressPointer;
+	m_ppBufferMatrixHeap = ppBufferMatrixHeap;
+	m_iBufferCount = iBufferCount;
 	m_pDH = pDH;
+	
+
+
+	m_pTransitionToConstant = new D3D12_RESOURCE_BARRIER[iBufferCount];
+	m_pTransitionToCopyDest = new D3D12_RESOURCE_BARRIER[iBufferCount];
+
+	D3D12_RESOURCE_TRANSITION_BARRIER transitionTo = {};
+	transitionTo.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+	transitionTo.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+	transitionTo.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	
+	D3D12_RESOURCE_TRANSITION_BARRIER transitionFrom = {};
+	transitionFrom.StateBefore = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER; 
+	transitionFrom.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
+	transitionFrom.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+
+	for (int i = 0; i < iBufferCount; ++i)
+	{
+		transitionTo.pResource = m_ppBufferMatrixHeap[i];
+		transitionFrom.pResource = m_ppBufferMatrixHeap[i];
+		
+		m_pTransitionToConstant[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		m_pTransitionToConstant[i].Transition = transitionTo;
+		m_pTransitionToConstant[i].Flags = D3D12_RESOURCE_BARRIER_FLAGS::D3D12_RESOURCE_BARRIER_FLAG_NONE;
+
+		m_pTransitionToCopyDest[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		m_pTransitionToCopyDest[i].Transition = transitionFrom;
+		m_pTransitionToCopyDest[i].Flags = D3D12_RESOURCE_BARRIER_FLAGS::D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	}
 }
 
 Camera::~Camera()
@@ -33,6 +62,8 @@ Camera::~Camera()
 	SAFE_RELEASE(m_pDH);
 	delete[] m_ppUploadHeapAdressPointer;
 	delete[] m_ppBufferMatrixHeap;
+	delete[] m_pTransitionToConstant;
+	delete[] m_pTransitionToCopyDest;
 }
 
 void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex, ID3D12GraphicsCommandList* pCopyCL)
@@ -107,11 +138,18 @@ void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex
 	pCopyCL->CopyResource(m_ppBufferMatrixHeap[iBufferIndex], m_pUploadHeap);
 }
 
+
 void Camera::BindCamera(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
 {
 	pCL->RSSetViewports(1, &m_viewport);
 	pCL->RSSetScissorRects(1, &m_rectscissor);
+	pCL->ResourceBarrier(1, &m_pTransitionToConstant[iBufferIndex]);
 	pCL->SetGraphicsRootConstantBufferView(0, m_ppBufferMatrixHeap[iBufferIndex]->GetGPUVirtualAddress());
+}
+
+void Camera::UnbindCamera(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
+{
+	pCL->ResourceBarrier(1, &m_pTransitionToCopyDest[iBufferIndex]);
 }
 
 

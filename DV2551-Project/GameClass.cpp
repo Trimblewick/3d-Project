@@ -181,13 +181,16 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	m_dDeltaTime = dDeltaTime;
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 	m_pCamera->Update(pInput, dDeltaTime, iFrameIndex, pCopyCL);
-	pCopyCL->Close();
+	
 	m_pCopyHighway->QueueCL(pCopyCL);
-	int temp = m_pCopyHighway->ExecuteCQ();
-	m_pCopyHighway->Wait(temp);
+	int iCameraFence = m_pCopyHighway->ExecuteCQ();
+	
 
 	m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
+
 	TransitionBackBufferIntoRenderTargetState();
+	m_pCopyHighway->Wait(iCameraFence);
+	
 	Frame();
 	PrecentBackBuffer();
 }
@@ -208,36 +211,11 @@ void GameClass::TransitionBackBufferIntoRenderTargetState()
 
 	pCL->ResourceBarrier(1, &barrierTransition);
 	
-	pCL->Close();
 	m_pGraphicsHighway->QueueCL(pCL);
 
 }
 
 
-void GameClass::PrecentBackBuffer()
-{
-	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
-	
-	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
-	transition.pResource = m_ppRTV[iFrameIndex];
-	transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET; 	
-	transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-
-	D3D12_RESOURCE_BARRIER barrierTransition = {};
-	barrierTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrierTransition.Transition = transition;
-
-	pCL->ResourceBarrier(1, &barrierTransition);
-	pCL->Close();
-
-	m_pGraphicsHighway->QueueCL(pCL);
-	int test = m_pGraphicsHighway->ExecuteCQ();
-	
-
-	m_pSwapChain->Present(0, 0);
-	m_pGraphicsHighway->Wait(test);
-}
 
 void GameClass::Frame()
 {
@@ -252,17 +230,71 @@ void GameClass::Frame()
 	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
 
 	pCL->SetGraphicsRootSignature(tempRS);
+	pCL->SetPipelineState(tempPSO);
 
 	m_pCamera->BindCamera(pCL, iFrameIndex);
-	pCL->SetPipelineState(tempPSO);
+
+
+	//update<-cpu
+	//copy<-Q->fence1
+
+	//update
+	//copy<-Q->fence2
+
+	//wait fence1
+	//transition<-graphicsQ
+	//draw
+	//transition --
+
+	//update
+	//copy<-Q->fence3
+
+	//wait fence2
+	//transition<-graphicsQ
+	//draw
+	//transition --
+
+	//-
+	//-
+	//present
+	//wait for frame 3
+
 	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCL->DrawInstanced(3, 1, 0, 0);
 
-	pCL->Close();
 	m_pGraphicsHighway->QueueCL(pCL);
 
 	//for each rs
 		//for each pipe
 			//highway, get cls
 			//for each object
+}
+
+
+void GameClass::PrecentBackBuffer()
+{
+	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
+	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
+
+	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
+	transition.pResource = m_ppRTV[iFrameIndex];
+	transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
+	D3D12_RESOURCE_BARRIER barrierTransition = {};
+	barrierTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrierTransition.Transition = transition;
+
+	m_pCamera->UnbindCamera(pCL, iFrameIndex);
+	pCL->ResourceBarrier(1, &barrierTransition);
+
+	m_pGraphicsHighway->QueueCL(pCL);
+
+
+	int test = m_pGraphicsHighway->ExecuteCQ();
+
+
+	m_pSwapChain->Present(0, 0);
+	//m_pGraphicsHighway->Wait(test);
+	m_pGraphicsHighway->WaitForAllFences();
 }
