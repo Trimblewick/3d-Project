@@ -18,7 +18,7 @@ bool GameClass::Initialize(Window* pWindow)
 {
 	m_pD3DFactory = new D3DFactory();
 	
-	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount);
+	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, 15);//m_iBackBufferCount);
 	m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 5);
 
 	int nrOfVertices = 0; //change to nrOfVertices which we get from plane class
@@ -47,14 +47,14 @@ bool GameClass::Initialize(Window* pWindow)
 
 	//create rtvs and descriptor heap
 	m_pDHRTV = m_pD3DFactory->CreateDH(m_iBackBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
-	int iSizeOffsetRTV = m_pD3DFactory->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	m_iIncrementSizeRTV = m_pD3DFactory->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
 
 	for (int i = 0; i < m_iBackBufferCount; ++i)
 	{
 		DxAssert(m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_ppRTV[i])));
 		m_pD3DFactory->GetDevice()->CreateRenderTargetView(m_ppRTV[i], nullptr, handleDH);
-		handleDH.ptr += iSizeOffsetRTV;
+		handleDH.ptr += m_iIncrementSizeRTV;
 	}
 	m_pClearColor[0] = 0.1f;
 	m_pClearColor[1] = 0.5f;
@@ -187,11 +187,12 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	m_pCopyHighway->Wait(temp);
 
 	m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
-	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
-	PrecentBackBuffer(pCLtest);
+	TransitionBackBufferIntoRenderTargetState();
+	Frame();
+	PrecentBackBuffer();
 }
 
-ID3D12GraphicsCommandList* GameClass::ClearBackBuffer()
+void GameClass::TransitionBackBufferIntoRenderTargetState()
 {
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
@@ -206,27 +207,18 @@ ID3D12GraphicsCommandList* GameClass::ClearBackBuffer()
 	barrierTransition.Transition = transition;
 
 	pCL->ResourceBarrier(1, &barrierTransition);
-	int iIncrementSizeRTV = m_pD3DFactory->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
-	handleDH.ptr += iIncrementSizeRTV * iFrameIndex;
+	
+	pCL->Close();
+	m_pGraphicsHighway->QueueCL(pCL);
 
-	pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
-	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
-	return pCL;
 }
 
 
-void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
+void GameClass::PrecentBackBuffer()
 {
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-
-	pCL->SetGraphicsRootSignature(tempRS);
-
-	m_pCamera->BindCamera(pCL, iFrameIndex);
-	pCL->SetPipelineState(tempPSO);
-	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	pCL->DrawInstanced(3, 1, 0, 0);
-
+	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
+	
 	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
 	transition.pResource = m_ppRTV[iFrameIndex];
 	transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET; 	
@@ -249,6 +241,25 @@ void GameClass::PrecentBackBuffer(ID3D12GraphicsCommandList* pCL)
 
 void GameClass::Frame()
 {
+	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
+	
+	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
+	handleDH.ptr += m_iIncrementSizeRTV * iFrameIndex;
+
+	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
+
+	pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
+	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
+
+	pCL->SetGraphicsRootSignature(tempRS);
+
+	m_pCamera->BindCamera(pCL, iFrameIndex);
+	pCL->SetPipelineState(tempPSO);
+	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	pCL->DrawInstanced(3, 1, 0, 0);
+
+	pCL->Close();
+	m_pGraphicsHighway->QueueCL(pCL);
 
 	//for each rs
 		//for each pipe
