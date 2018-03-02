@@ -3,14 +3,14 @@
 *.pdb
 *.exe
 *.ilk
-*.db
+*Browse.VC.db
 *.*~
 \.*
 Debug*
 *.opendb
 /uml.png
 *.tlog
-
+.vcxproj
 .vs/
 x64/*
 bin/

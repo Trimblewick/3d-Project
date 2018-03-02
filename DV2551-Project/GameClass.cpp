@@ -199,6 +199,8 @@ void GameClass::CleanUp()
 	SAFE_RELEASE(tempPSO);
 	SAFE_RELEASE(tempRS);
 
+
+
 	if (m_pBezierClass)
 	{
 		delete m_pBezierClass;
@@ -271,7 +273,7 @@ void GameClass::Frame()
 	if (!waduheck)
 	{
 		waduheck = true;
-		m_pPlane = m_pD3DFactory->CreatePlane(pCL);
+		m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16);
 
 		pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 		pCL->DrawInstanced(3, 1, 0, 0);
