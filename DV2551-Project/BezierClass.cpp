@@ -31,20 +31,20 @@ void BezierClass::CalculateBezierVertices()
 {
 	//Change entire function to take nrOfVertices from PLane(), choose a couple of them and offset them in Y
 	float4 test;
-	test.x = -5.0f;
-	test.y = 0.0f;
+	test.x = -2.5f;
+	test.y = -2.5f;
 	test.z = 10.0f;
 	test.w = 1.0f;
 
 	float4 test2;
-	test2.x = 0.0f;
-	test2.y = 5.0f;
+	test2.x = -2.5f;
+	test2.y = 2.5f;
 	test2.z = 10.0f;
 	test2.w = 1.0f;
 
 	float4 test3;
-	test3.x = 5.0f;
-	test3.y = 0.0f;
+	test3.x = 2.5f;
+	test3.y = -2.5f;
 	test3.z = 10.0f;
 	test3.w = 1.0f;
 
