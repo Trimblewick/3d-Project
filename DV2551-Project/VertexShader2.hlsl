@@ -23,7 +23,7 @@ struct VS_IN
 	float4 position : SV_POSITION;
 };
 
-VS_IN main(VS_IN input)
+float4 main(float4 input : SV_POSITION) : SV_POSITION
 {
-	return input;
+	return mul(input, vpMat);
 }

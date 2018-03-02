@@ -16,14 +16,17 @@ Plane::Plane(unsigned int tiles)
 	unsigned int uiNumIndices = (m_uiSize - 1)* (m_uiSize - 1);
 	m_pIndices.reserve(uiNumIndices);
 
-	for (unsigned int i = 0; i < uiNumIndices; ++i)
+	for (unsigned int i = 0; i < (m_uiSize - 1); ++i)
 	{
-		m_pIndices.push_back(i);
-		m_pIndices.push_back(i + m_uiSize);
-		m_pIndices.push_back(i + m_uiSize + 1);
-		m_pIndices.push_back(i);
-		m_pIndices.push_back(i + m_uiSize + 1);
-		m_pIndices.push_back(i + 1);
+		for (unsigned int j = 0; j < (m_uiSize - 1); ++j)
+		{
+			m_pIndices.push_back(i * m_uiSize + j);
+			m_pIndices.push_back(i * m_uiSize + j + m_uiSize);
+			m_pIndices.push_back(i * m_uiSize + j + m_uiSize + 1);
+			m_pIndices.push_back(i * m_uiSize + j);
+			m_pIndices.push_back(i * m_uiSize + j + m_uiSize + 1);
+			m_pIndices.push_back(i * m_uiSize + j + 1);
+		}
 	}
 }
 

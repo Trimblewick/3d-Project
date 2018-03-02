@@ -349,18 +349,9 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	return pB;
 }
 
-Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
+Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned int tiles = 16)
 {
-	int tiles = 4;
 	Plane* plane = new Plane(tiles);
-
-	/*float4 vList[] = {
-		{ -0.5f,  0.5f, 0.5f, 1.0f},
-		{ 0.5f, -0.5f, 0.5f, 1.0f},
-		{ -0.5f, -0.5f, 0.5f, 1.0f},
-		{ 0.5f,  0.5f, 0.5f, 1.0f}
-	};*/
-	//int vBufferSize = sizeof(vList);
 
 	float4* vList = plane->GetVertices()->data();
 	int vBufferSize = sizeof(float4) * plane->GetVertices()->size();

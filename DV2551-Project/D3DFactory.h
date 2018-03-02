@@ -29,7 +29,7 @@ public:
 	GPUHighway*								CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCLs);
 	Camera*									CreateCamera(unsigned int iBufferCount, long iWidthWindow, long iHeightWindow);
 	BezierClass*							CreateBezier(int nrOfVertices);
-	Plane*									CreatePlane(ID3D12GraphicsCommandList* pCmdList);
+	Plane*									CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned int tiles);
 
 
 private:
