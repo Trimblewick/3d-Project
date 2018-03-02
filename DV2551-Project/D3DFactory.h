@@ -29,7 +29,6 @@ public:
 	Camera*									CreateCamera(unsigned int iBufferCount, long iWidthWindow, long iHeightWindow);
 	BezierClass*							CreateBezier(int nrOfVertices);
 
-
 private:
 	IDXGIFactory4*							m_pDXGIFactory;
 	ID3D12Device*							m_pDevice;

@@ -7,7 +7,7 @@ Camera::Camera(
 	D3D12_VIEWPORT viewport, 
 	D3D12_RECT scissorRect, 
 	ID3D12Resource* pUploadHeap, 
-	unsigned char* pUploadHeapAdressPointer,
+	unsigned char** ppUploadHeapAdressPointer,
 	ID3D12Resource** ppBufferMatrixHeap, 
 	unsigned int iBufferCount, 
 	ID3D12DescriptorHeap* pDH)
@@ -18,29 +18,50 @@ Camera::Camera(
 	m_iBufferCount = iBufferCount;
 	m_ppBufferMatrixHeap = ppBufferMatrixHeap;
 	m_pUploadHeap = pUploadHeap;
-	m_pUploadHeapAdressPointer = pUploadHeapAdressPointer;
+	m_ppUploadHeapAdressPointer = ppUploadHeapAdressPointer;
 	m_pDH = pDH;
 }
 
 Camera::~Camera()
 {
-	D3D12_RANGE rangeRead = {};
+	
 	for (unsigned int i = 0; i < m_iBufferCount; ++i)
 	{
-	//	m_ppBufferMatrixHeap[i]->Unmap(0, &rangeRead);
 		SAFE_RELEASE(m_ppBufferMatrixHeap[i]);
 	}
-
-	
-	m_pUploadHeap->Unmap(0, &rangeRead);
-	delete m_pUploadHeapAdressPointer;
 	SAFE_RELEASE(m_pUploadHeap);
 	SAFE_RELEASE(m_pDH);
+	delete[] m_ppUploadHeapAdressPointer;
 	delete[] m_ppBufferMatrixHeap;
 }
 
 void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex, ID3D12GraphicsCommandList* pCopyCL)
 {
+	if (pInput->IsKeyDown(pInput->LEFT_ARROW))
+	{
+		if (!pInput->IsKeyDown(pInput->RIGHT_ARROW))
+		{
+			DirectX::XMVECTOR rotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, -dDeltaTime, 0);
+			DirectX::XMVECTOR forwardVec = DirectX::XMLoadFloat3(&m_data.forward);
+			DirectX::XMVECTOR rightVec = DirectX::XMLoadFloat3(&m_data.right);
+			forwardVec = DirectX::XMVector3Rotate(forwardVec, rotationQuaternion);
+			rightVec = DirectX::XMVector3Rotate(rightVec, rotationQuaternion);
+			DirectX::XMStoreFloat3(&m_data.forward, forwardVec);
+			DirectX::XMStoreFloat3(&m_data.right, rightVec);
+			
+		}
+	}
+	else if (pInput->IsKeyDown(pInput->RIGHT_ARROW))
+	{
+		DirectX::XMVECTOR rotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, dDeltaTime, 0);
+		DirectX::XMVECTOR forwardVec = DirectX::XMLoadFloat3(&m_data.forward);
+		DirectX::XMVECTOR rightVec = DirectX::XMLoadFloat3(&m_data.right);
+		forwardVec = DirectX::XMVector3Rotate(forwardVec, rotationQuaternion);
+		rightVec = DirectX::XMVector3Rotate(rightVec, rotationQuaternion);
+		DirectX::XMStoreFloat3(&m_data.forward, forwardVec);
+		DirectX::XMStoreFloat3(&m_data.right, rightVec);
+	}
+
 	if (pInput->IsKeyDown(pInput->W))
 	{
 		m_data.position.x += m_data.forward.x * dDeltaTime;
@@ -77,11 +98,11 @@ void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex
 		m_data.position.y -= m_data.up.y * dDeltaTime;
 		m_data.position.z -= m_data.up.z * dDeltaTime;
 	}
-
+	
 	m_data.viewMat = DirectX::XMMatrixTranspose(DirectX::XMMatrixLookToLH(DirectX::XMLoadFloat3(&m_data.position), DirectX::XMLoadFloat3(&m_data.forward), DirectX::XMLoadFloat3(&m_data.up)));
 	m_data.vpMat = DirectX::XMMatrixMultiply(m_data.projMat, m_data.viewMat);
 
-	memcpy(m_pUploadHeapAdressPointer, &m_data, sizeof(CameraBuffer));
+	memcpy(*m_ppUploadHeapAdressPointer, &m_data, sizeof(CameraBuffer));
 	
 	pCopyCL->CopyResource(m_ppBufferMatrixHeap[iBufferIndex], m_pUploadHeap);
 }

@@ -25,8 +25,6 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pBezierClass = m_pD3DFactory->CreateBezier(nrOfVertices);
 	m_pBezierClass->CalculateBezierVertices();
 
-	//m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_iBackBufferCount, 2);
-
 	//set up swapchain with the graphics highway
 	DXGI_MODE_DESC descMode = {};
 	descMode.Width = pWindow->GetWidth();

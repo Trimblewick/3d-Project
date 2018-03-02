@@ -15,7 +15,6 @@
 #include <chrono>
 #include <string>
 
-
 #include "Window.h"
 #include "GameClass.h"
 #include "Input.h"

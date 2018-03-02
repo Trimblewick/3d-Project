@@ -242,7 +242,7 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 	ID3D12DescriptorHeap* pDH = CreateDH(3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	int iIncrementSizeCBV = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = pDH->GetCPUDescriptorHandleForHeapStart();
-	unsigned char* pBufferAdressPointer = new unsigned char;
+	unsigned char** ppBufferAddressPointer = new unsigned char*;
 	ID3D12Resource** ppBufferMatrix = new ID3D12Resource*[iBufferCount];
 	ID3D12Resource*	pUploadHeap;
 	D3D12_CONSTANT_BUFFER_VIEW_DESC descCB = {};
@@ -258,13 +258,12 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 		descCB.BufferLocation = ppBufferMatrix[i]->GetGPUVirtualAddress();
 		m_pDevice->CreateConstantBufferView(&descCB, handleDH);
 		handleDH.ptr += iIncrementSizeCBV;
-		
-		//memcpy(pBufferAdressPointer, &data, sizeof(data));
 	}
-	D3D12_RANGE rangeRead = {};
-	DxAssert(pUploadHeap->Map(0, &rangeRead, reinterpret_cast<void**>(&pBufferAdressPointer)));
 
-	return new Camera(data, viewport, rectScissor, pUploadHeap, pBufferAdressPointer, ppBufferMatrix , iBufferCount, pDH);
+	D3D12_RANGE rangeRead = {};
+	DxAssert(pUploadHeap->Map(0, &rangeRead, reinterpret_cast<void**>(ppBufferAddressPointer)));
+	
+	return new Camera(data, viewport, rectScissor, pUploadHeap, ppBufferAddressPointer, ppBufferMatrix , iBufferCount, pDH);
 }
 
 BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
