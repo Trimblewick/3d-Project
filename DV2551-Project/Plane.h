@@ -24,9 +24,6 @@ private:
 	std::vector<float4>				m_pVerts;
 	std::vector<DWORD>				m_pIndices;
 
-	ID3D12DescriptorHeap*			m_pDHverts;
-	D3D12_ROOT_DESCRIPTOR_TABLE*	m_pDescriptorTable;
-
 	ID3D12Resource*					m_pVertexBuffer;
 	ID3D12Resource*					m_pIndexBuffer;
 

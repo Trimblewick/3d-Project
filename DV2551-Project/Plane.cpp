@@ -32,6 +32,8 @@ Plane::Plane(unsigned int tiles)
 
 Plane::~Plane()
 {
+	SAFE_RELEASE(m_pVertexBuffer);
+	SAFE_RELEASE(m_pIndexBuffer);
 }
 
 void Plane::SetVertexBuffer(ID3D12Resource * pVBuffer)

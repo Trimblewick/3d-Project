@@ -179,6 +179,11 @@ void GameClass::CleanUp()
 		delete m_pCopyHighway;
 		m_pCopyHighway = nullptr;
 	}
+	if (m_pPlane)
+	{
+		delete m_pPlane;
+		m_pPlane = nullptr;
+	}
 	if (m_pCamera)
 	{
 		delete m_pCamera;

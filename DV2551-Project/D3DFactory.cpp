@@ -350,7 +350,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	return pB;
 }
 
-Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned int tiles = 16)
+Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned int tiles)
 {
 	Plane* plane = new Plane(tiles);
 
