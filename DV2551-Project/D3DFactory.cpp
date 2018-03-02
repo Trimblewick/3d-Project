@@ -351,23 +351,20 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 {
-	int size = 16;
-	Plane* plane = new Plane(size);
+	int tiles = 4;
+	Plane* plane = new Plane(tiles);
 
-	/*struct Vertex
-	{
-		float4 position;
-		float4 color;
-	};
-	Vertex vList[] = {
-		{ -0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f },
-		{ 0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f },
-		{ -0.5f, -0.5f, 0.5f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f },
-		{ 0.5f,  0.5f, 0.5f, 1.0f, 1.0f, 0.0f, 1.0f, 1.0f }
+	/*float4 vList[] = {
+		{ -0.5f,  0.5f, 0.5f, 1.0f},
+		{ 0.5f, -0.5f, 0.5f, 1.0f},
+		{ -0.5f, -0.5f, 0.5f, 1.0f},
+		{ 0.5f,  0.5f, 0.5f, 1.0f}
 	};*/
-	float4* vList = plane->GetVertices().data();
-	int vBufferSize = sizeof(float) * 4 /*float4*/ * size * size; //sizeof(vList);
+	//int vBufferSize = sizeof(vList);
 
+	float4* vList = plane->GetVertices()->data();
+	int vBufferSize = sizeof(float4) * plane->GetVertices()->size();
+	
 	//Vertex Buffer ---------------------------------
 
 	D3D12_HEAP_PROPERTIES heapProperties;
@@ -399,7 +396,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 		nullptr,
 		IID_PPV_ARGS(&pVBuffer));
 
-	pVBuffer->SetName(L"Vulles Dank:a Task"); //TODO: rename if kept, lol
+	pVBuffer->SetName(L"Vertex Buffer Heap");
 
 	D3D12_HEAP_PROPERTIES uploadHeapProperties;
 	uploadHeapProperties.Type = D3D12_HEAP_TYPE_UPLOAD;
@@ -430,8 +427,8 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 		nullptr,
 		IID_PPV_ARGS(&pVBUpload));
 
-	pVBUpload->SetName(L"Vulles Dank:a Upload Heap"); //TODO: this one too ex dee
-
+	pVBUpload->SetName(L"Vertex Upload Heap");
+	
 	D3D12_SUBRESOURCE_DATA vertexData = {};
 	vertexData.pData = reinterpret_cast<BYTE*>(vList);
 	vertexData.RowPitch = uploadDesc.Width;
@@ -515,9 +512,11 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList)
 	//	0, 1, 2, // first triangle
 	//	0, 3, 1 // second triangle
 	//};
+	//int iBufferSize = sizeof(iList);
 
-	DWORD *iList = plane->GetIndices().data();
-	int iBufferSize = sizeof(DWORD) * 6 * size * (size - 1);//sizeof(iList);
+	DWORD *iList = plane->GetIndices()->data();
+	int iBufferSize = sizeof(DWORD) * plane->GetIndices()->size();
+	
 
 	D3D12_HEAP_PROPERTIES iBufferProperties;
 	iBufferProperties.Type = D3D12_HEAP_TYPE_DEFAULT;

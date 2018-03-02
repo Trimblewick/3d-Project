@@ -1,3 +1,8 @@
-﻿  GameClass.cpp
+﻿  Plane.cpp
+c:\temp\dv2551-project\dv2551-project\plane.cpp(59): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
+  D3DFactory.cpp
+c:\temp\dv2551-project\dv2551-project\d3dfactory.cpp(366): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+c:\temp\dv2551-project\dv2551-project\d3dfactory.cpp(518): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  Generating Code...
   DV2551-Project.vcxproj -> C:\temp\DV2551-Project\x64\Debug\DV2551-Project.exe
   DV2551-Project.vcxproj -> C:\temp\DV2551-Project\x64\Debug\DV2551-Project.pdb (Partial PDB)

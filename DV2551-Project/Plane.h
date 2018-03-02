@@ -16,8 +16,8 @@ public:
 
 	void bind(ID3D12GraphicsCommandList* pCL);
 
-	std::vector<float4> GetVertices();
-	std::vector<DWORD> GetIndices();
+	std::vector<float4>* GetVertices();
+	std::vector<DWORD>* GetIndices();
 
 private:
 	unsigned int					m_uiSize;

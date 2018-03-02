@@ -1,9 +1,9 @@
 #include "stdafx.h"
 #include "Plane.h"
 
-Plane::Plane(unsigned int tileSize)
+Plane::Plane(unsigned int tiles)
 {
-	m_uiSize = tileSize;
+	m_uiSize = tiles + 1;
 	m_pVerts.reserve(m_uiSize * m_uiSize);
 
 	for (unsigned int i = 0; i < m_uiSize; ++i)
@@ -13,8 +13,9 @@ Plane::Plane(unsigned int tileSize)
 			m_pVerts.push_back(float4{ (float)j, 0, (float)i, 1 });
 		}
 	}
-	unsigned int uiNumIndices = m_uiSize * (m_uiSize - 1);
+	unsigned int uiNumIndices = (m_uiSize - 1)* (m_uiSize - 1);
 	m_pIndices.reserve(uiNumIndices);
+
 	for (unsigned int i = 0; i < uiNumIndices; ++i)
 	{
 		m_pIndices.push_back(i);
@@ -58,12 +59,12 @@ void Plane::bind(ID3D12GraphicsCommandList* pCL)
 	pCL->DrawIndexedInstanced(m_pIndices.size(), 1, 0, 0, 0);
 }
 
-std::vector<float4> Plane::GetVertices()
+std::vector<float4>* Plane::GetVertices()
 {
-	return m_pVerts;
+	return &m_pVerts;
 }
 
-std::vector<DWORD> Plane::GetIndices()
+std::vector<DWORD>* Plane::GetIndices()
 {
-	return m_pIndices;
+	return &m_pIndices;
 }
