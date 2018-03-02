@@ -19,8 +19,8 @@ public:
 	void							CleanUp();
 
 	void							Update(Input* input, double dDeltaTime);
-	ID3D12GraphicsCommandList*		ClearBackBuffer();
-	void							PresentBackBuffer(ID3D12GraphicsCommandList* pCL);
+	void							TransitionBackBufferIntoRenderTargetState();
+	void							PrecentBackBuffer();
 	void							Frame();
 
 	
@@ -42,6 +42,7 @@ private:
 	IDXGISwapChain3*				m_pSwapChain;
 	ID3D12Resource*					m_ppRTV[m_iBackBufferCount];
 	ID3D12DescriptorHeap*			m_pDHRTV;
+	int								m_iIncrementSizeRTV;
 
 	ID3D12RootSignature*			tempRS;
 	ID3D12PipelineState*			tempPSO;

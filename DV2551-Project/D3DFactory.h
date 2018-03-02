@@ -31,7 +31,6 @@ public:
 	BezierClass*							CreateBezier(int nrOfVertices);
 	Plane*									CreatePlane(ID3D12GraphicsCommandList* pCmdList);
 
-
 private:
 	IDXGIFactory4*							m_pDXGIFactory;
 	ID3D12Device*							m_pDevice;

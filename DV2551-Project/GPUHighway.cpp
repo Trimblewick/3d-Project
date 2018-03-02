@@ -58,10 +58,12 @@ ID3D12CommandQueue* GPUHighway::GetCQ()
 void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 {
 	int iLock = -1;
+	
 	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
 	{
 		if (m_ppCLs[i] == pCL)
 		{
+			pCL->Close();
 			iLock = i;
 			m_pCLLock[i] = -1;
 		}
