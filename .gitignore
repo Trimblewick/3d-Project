@@ -12,7 +12,7 @@ Debug*
 *.tlog
 
 .vs/
-x64/
+x64/*
 bin/
 packages/
 *.ipch
