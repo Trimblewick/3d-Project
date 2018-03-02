@@ -149,7 +149,6 @@
   <ItemGroup>
     <ClInclude Include="BezierClass.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="CopyQueue.h" />
     <ClInclude Include="D3DFactory.h" />
     <ClInclude Include="GameClass.h" />
     <ClInclude Include="GPUHighway.h" />
@@ -162,7 +161,6 @@
   <ItemGroup>
     <ClCompile Include="BezierClass.cpp" />
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="CopyQueue.cpp" />
     <ClCompile Include="D3DFactory.cpp" />
     <ClCompile Include="GameClass.cpp" />
     <ClCompile Include="GPUHighway.cpp" />
