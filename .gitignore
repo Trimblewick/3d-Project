@@ -11,7 +11,7 @@ Debug*
 /uml.png
 *.tlog
 .vcxproj
-.vs/
+.vs/*
 x64/*
 bin/
 packages/

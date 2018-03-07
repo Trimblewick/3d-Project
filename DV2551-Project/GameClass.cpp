@@ -276,7 +276,7 @@ void GameClass::Frame()
 		m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16);
 
 		pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		pCL->DrawInstanced(3, 1, 0, 0);
+		//pCL->DrawInstanced(3, 1, 0, 0);
 	}
 	else
 	{
