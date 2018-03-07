@@ -269,6 +269,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 {
 	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	ID3D12Resource* pUploadCB = nullptr;
+	std::vector<float4>	pBezierPoints;
 
 	for (int i = 0; i < nrOfVertices; ++i) //Change nrOfVertices to a factor of nrOfVertices which we decide, change below in function too
 	{
@@ -277,7 +278,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 		test.y = 0.0f;
 		test.z = 1.0f;
 		test.w = 1.0f;
-		m_pBezierPoints.push_back(test);
+		pBezierPoints.push_back(test);
 	}
 
 	//Set resource desc
@@ -320,10 +321,11 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 	uint8_t* address;
 	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address)); 
-	memcpy(address, m_pBezierPoints.data(), /*sizeof(m_pBezierVertices)*sizeof(float4)*/nrOfVertices * sizeof(float4));
+	memcpy(address, pBezierPoints.data(), nrOfVertices * sizeof(float4));
 
 	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, nrOfVertices);
-
+	pBezierPoints.clear();
+	
 	return pB;
 }
 
