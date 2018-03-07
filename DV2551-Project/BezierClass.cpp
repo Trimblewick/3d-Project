@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "BezierClass.h"
+#include <time.h>
 
 //TODO: Quick test bind cbuffer to shader and see if values get through 
 //		memcpy new cbuffer data in update loop every frame to cbuffer??
@@ -26,49 +27,23 @@ BezierClass::~BezierClass()
 	//DELET THIS, hihis
 }
 
-void BezierClass::CalculateBezierPoints(/*int width*/)
+void BezierClass::CalculateBezierPoints(int width)
 {
-	//Change entire function to take nrOfVertices from PLane(), choose a couple of them and offset them in Y
-	float4 test;
-	test.x = -2.5f;
-	test.y = -2.5f;
-	test.z = 10.0f;
-	test.w = 1.0f;
+	width = width - 1;
+	int grid = width / 3;
+	for (int i = 0; i < 4; ++i)
+	{
+		for (int j = 0; j < 4; ++j)
+		{
+			float4 temp;
+			temp.x = grid*j; //assuming first vertex is position 0,0,0
+			temp.y = rand() % 20 -10; //between -10 and 10?
+			temp.z = grid * i;
 
-	float4 test2;
-	test2.x = -2.5f;
-	test2.y = 2.5f;
-	test2.z = 10.0f;
-	test2.w = 1.0f;
-
-	float4 test3;
-	test3.x = 2.5f;
-	test3.y = -2.5f;
-	test3.z = 10.0f;
-	test3.w = 1.0f;
-
-	m_pBezierPoints.push_back(test);
-	m_pBezierPoints.push_back(test2);
-	m_pBezierPoints.push_back(test3);
-
+			m_pBezierPoints.push_back(temp);
+		}
+	}
 	memcpy(m_address, m_pBezierPoints.data(), m_nrOfVertices * sizeof(float4));
-
-	//int grid = width / 3;
-	//for (int i = 0; i < 4; ++i)
-	//{
-	//	for (int j = 0; j < 4; ++j)
-	//	{
-	//		float4 temp;
-	//		temp.x = grid*j; //assuming first vertex is position 0,0,0
-	//		temp.y = 0; //change to rand
-	//		temp.z = grid * i;
-
-	//		m_pBezierPoints.push_back(temp);
-	//	}
-	//}
-	//memcpy(m_address, m_pBezierPoints.data(), m_nrOfVertices * sizeof(float4));
-
-	return;
 }
 
 void BezierClass::UpdateBezierPoints()
