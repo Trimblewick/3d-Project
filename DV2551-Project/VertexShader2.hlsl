@@ -18,12 +18,8 @@ cbuffer bezier : register(b1)
 	float4 bezierVertices[3];
 };
 
-struct VS_IN
-{
-	float4 position : SV_POSITION;
-};
 
-float4 main(float4 input : SV_POSITION) : SV_POSITION
+float4 main(float2 input : UV) : SV_POSITION
 {
-	return mul(input, vpMat);
+	return mul(float4(input.x, 0, input.y, 1), vpMat);
 }

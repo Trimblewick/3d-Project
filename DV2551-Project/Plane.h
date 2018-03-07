@@ -6,7 +6,7 @@
 class Plane
 {
 public:
-	Plane(unsigned int tileSize);
+	Plane(unsigned int tiles, ID3D12Resource* pVBuffer, D3D12_VERTEX_BUFFER_VIEW vertexBufferView, ID3D12Resource* pIBuffer, D3D12_INDEX_BUFFER_VIEW indexBufferView);
 	~Plane();
 
 	void SetVertexBuffer(ID3D12Resource* pVBuffer);
@@ -16,12 +16,14 @@ public:
 
 	void bind(ID3D12GraphicsCommandList* pCL);
 
-	std::vector<float4>* GetVertices();
+	std::vector<float2>* GetVertices();
 	std::vector<DWORD>* GetIndices();
 	unsigned int GetWidth();
+
 private:
 	unsigned int					m_uiWidth;
-	std::vector<float4>				m_pVerts;
+	unsigned int					m_uiNumIndices;
+	std::vector<float2>				m_pVerts;
 	std::vector<DWORD>				m_pIndices;
 
 	ID3D12Resource*					m_pVertexBuffer;
