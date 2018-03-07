@@ -245,7 +245,6 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	m_pCopyHighway->Wait(iCameraFence);
 	
 	Frame();
-	TransitionBackBufferIntoRenderTargetState();
 	PresentBackBuffer();
 }
 
@@ -286,7 +285,7 @@ void GameClass::Frame()
 	m_pCamera->BindCamera(pCL, iBufferIndex);
 	m_pBezierClass->BindBezier(pCL, iBufferIndex);
 
-	m_pBezierClass->BindBezier(pCL, iBufferIndex);
+	//m_pBezierClass->BindBezier(pCL, iBufferIndex);
 	
 	m_pPlane->bind(pCL);
 	
