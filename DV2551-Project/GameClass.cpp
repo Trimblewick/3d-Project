@@ -226,11 +226,11 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	m_pCopyHighway->Wait(iCameraFence);
 	
 	Frame();
-	PrecentBackBuffer();
-	m_pCamera->Update(pInput, dDeltaTime, iFrameIndex);
+	PresentBackBuffer();
+	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
 	m_pBezierClass->UpdateBezierPoints(); //Calculates Bézier vertices
-	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
-	PresentBackBuffer(pCLtest);
+	//ClearBackBuffer();
+	PresentBackBuffer();
 }
 
 void GameClass::TransitionBackBufferIntoRenderTargetState()
@@ -310,7 +310,7 @@ void GameClass::Frame()
 }
 
 
-void GameClass::PrecentBackBuffer()
+void GameClass::PresentBackBuffer()
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();

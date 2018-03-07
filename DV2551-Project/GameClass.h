@@ -20,7 +20,7 @@ public:
 
 	void							Update(Input* input, double dDeltaTime);
 	void							TransitionBackBufferIntoRenderTargetState();
-	void							PrecentBackBuffer();
+	void							PresentBackBuffer();
 	void							Frame();
 
 	
