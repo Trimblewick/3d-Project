@@ -19,7 +19,7 @@ bool GameClass::Initialize(Window* pWindow)
 {
 	m_pD3DFactory = new D3DFactory();
 	
-	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, 15);//m_iBackBufferCount);
+	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, 15);
 	m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 5);
 
 
@@ -41,7 +41,7 @@ bool GameClass::Initialize(Window* pWindow)
 	descSwapChain.SampleDesc = descSample;
 	descSwapChain.Windowed = true;
 
-	m_pSwapChain = m_pD3DFactory->CreateSwapChain(&descSwapChain, m_pGraphicsHighway->GetCQ());//m_pGraphicsHighway->GetCQ());
+	m_pSwapChain = m_pD3DFactory->CreateSwapChain(&descSwapChain, m_pGraphicsHighway->GetCQ());
 
 	//create rtvs and descriptor heap
 	m_pDHRTV = m_pD3DFactory->CreateDH(m_iBackBufferCount, D3D12_DESCRIPTOR_HEAP_TYPE_RTV, false);
@@ -224,6 +224,7 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	
 	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
+	
 	m_dDeltaTime = dDeltaTime;
 
 	/*for (int i = 0; i < 1; ++i)
