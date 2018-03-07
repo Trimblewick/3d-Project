@@ -26,7 +26,7 @@ BezierClass::~BezierClass()
 	//DELET THIS, hihis
 }
 
-void BezierClass::CalculateBezierPoints()
+void BezierClass::CalculateBezierPoints(/*int width*/)
 {
 	//Change entire function to take nrOfVertices from PLane(), choose a couple of them and offset them in Y
 	float4 test;
@@ -52,6 +52,21 @@ void BezierClass::CalculateBezierPoints()
 	m_pBezierPoints.push_back(test3);
 
 	memcpy(m_address, m_pBezierPoints.data(), m_nrOfVertices * sizeof(float4));
+
+	//int grid = width / 3;
+	//for (int i = 0; i < 4; ++i)
+	//{
+	//	for (int j = 0; j < 4; ++j)
+	//	{
+	//		float4 temp;
+	//		temp.x = grid*j; //assuming first vertex is position 0,0,0
+	//		temp.y = 0; //change to rand
+	//		temp.z = grid * i;
+
+	//		m_pBezierPoints.push_back(temp);
+	//	}
+	//}
+	//memcpy(m_address, m_pBezierPoints.data(), m_nrOfVertices * sizeof(float4));
 
 	return;
 }

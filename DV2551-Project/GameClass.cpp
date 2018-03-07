@@ -155,9 +155,9 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
 
 	//Create Bezier
-	m_nrOfVertices = 3; //change to nrOfVertices which we get from plane class
+	m_nrOfVertices = 3; //change to 16
 	m_pBezierClass = m_pD3DFactory->CreateBezier(m_nrOfVertices);
-	m_pBezierClass->CalculateBezierPoints(/*m_pPlaneClass->GetVertices()*/); //send vertices from plane and offset Y
+	m_pBezierClass->CalculateBezierPoints(/*m_pPlaneClass->GetWidth()*/);
 
 	return true;
 }
