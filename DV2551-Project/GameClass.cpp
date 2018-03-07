@@ -214,22 +214,20 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	m_dDeltaTime = dDeltaTime;
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
+
 	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
+	m_pBezierClass->UpdateBezierPoints(); //Calculates Bézier vertices
+	//m_pBezierClass->BindBezier(pCopyCL, iBufferIndex); ???
+
 	
 	m_pCopyHighway->QueueCL(pCopyCL);
 	int iCameraFence = m_pCopyHighway->ExecuteCQ();
 	
-
-	//m_pBezierClass->CalculateBezierVertices(); //calculates this frame's bézier vertices using previous frame's bézier vertices
-
 	TransitionBackBufferIntoRenderTargetState();
 	m_pCopyHighway->Wait(iCameraFence);
 	
 	Frame();
-	PresentBackBuffer();
-	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
-	m_pBezierClass->UpdateBezierPoints(); //Calculates Bézier vertices
-	//ClearBackBuffer();
+	TransitionBackBufferIntoRenderTargetState();
 	PresentBackBuffer();
 }
 
@@ -250,7 +248,6 @@ void GameClass::TransitionBackBufferIntoRenderTargetState()
 	pCL->ResourceBarrier(1, &barrierTransition);
 	
 	m_pGraphicsHighway->QueueCL(pCL);
-
 }
 
 
@@ -271,8 +268,8 @@ void GameClass::Frame()
 	pCL->SetPipelineState(tempPSO);
 
 	m_pCamera->BindCamera(pCL, iBufferIndex);
-
 	m_pBezierClass->BindBezier(pCL, iBufferIndex);
+
 	pCL->SetPipelineState(tempPSO);
 	if (!waduheck)
 	{

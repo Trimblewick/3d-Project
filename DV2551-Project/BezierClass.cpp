@@ -23,8 +23,7 @@ BezierClass::~BezierClass()
 	m_pBezierPoints.clear();
 	SAFE_RELEASE(m_pConstantDescHeap);
 	SAFE_RELEASE(m_pConstantUploadHeap);
-	//delete m_address;
-	//DELET THIS, hihi
+	//DELET THIS, hihis
 }
 
 void BezierClass::CalculateBezierPoints()
