@@ -25,8 +25,6 @@ public:
 	HWND GetWindowHandle();
 	HINSTANCE GetWindowInstance();
 	void SetTitle(std::string sTitle);
-
-
 };
 
 

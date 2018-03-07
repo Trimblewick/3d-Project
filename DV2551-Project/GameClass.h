@@ -5,6 +5,7 @@
 #include "GPUHighway.h"
 #include "Window.h"
 #include "BezierClass.h"
+#include "Plane.h"
 
 class GameClass
 {
@@ -22,13 +23,13 @@ public:
 	void							PrecentBackBuffer();
 	void							Frame();
 
-
 	
 
 private:
 	static const unsigned int		m_iBackBufferCount = 3;
 	double							m_dDeltaTime;
 	float							m_pClearColor[4];
+	int								m_nrOfVertices;
 
 
 	D3DFactory*						m_pD3DFactory;
@@ -36,6 +37,7 @@ private:
 	GPUHighway*						m_pCopyHighway;
 	Camera*							m_pCamera;
 	BezierClass*					m_pBezierClass;
+	Plane*							m_pPlane;
 
 	IDXGISwapChain3*				m_pSwapChain;
 	ID3D12Resource*					m_ppRTV[m_iBackBufferCount];
@@ -44,6 +46,9 @@ private:
 
 	ID3D12RootSignature*			tempRS;
 	ID3D12PipelineState*			tempPSO;
-	
+
+	D3D12_VIEWPORT					m_viewport;
+	D3D12_RECT						m_rectScissor;
+
 };
  

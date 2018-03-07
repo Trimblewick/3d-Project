@@ -1,56 +1,74 @@
 #include "stdafx.h"
 #include "BezierClass.h"
 
-//TODO: move root constants/paramters etc to factory, 
-//		make a bonstantCuffer function here that sends m_pBezierVertices to GPU to be used for offset calc,
-//		fill RootSig in D3DFactory
-//		set PSO in D3DFactory
+//TODO: Quick test bind cbuffer to shader and see if values get through 
+//		memcpy new cbuffer data in update loop every frame to cbuffer??
+//		m_pBezierVertices used in D3DFactory original memcpy only has 3 vertices
+//		
 
 BezierClass::BezierClass(/**/)
 {
 }
 
-BezierClass::BezierClass(ID3D12DescriptorHeap * pDH, ID3D12Resource* pResource)
+BezierClass::BezierClass(ID3D12DescriptorHeap * pDH, ID3D12Resource* pResource, uint8_t* address, int nrOfVertices)
 {
-	float4 temp;
-	temp.x = 1.0f;
-	temp.y = 0.0f;
-	temp.z = 0.0f;
-	temp.w = 0.0f;
-
-	m_nrOfVertices = 0; //update
-
-	m_pBezierVertices.push_back(temp);
-	m_pPreviouslyCalculatedBezierVertices.push_back(temp);
-
+	m_nrOfVertices = nrOfVertices;
 	m_pConstantDescHeap = pDH;
 	m_pConstantUploadHeap = pResource;
+	m_address = address;
 }
 
 BezierClass::~BezierClass()
 {
 	m_pBezierVertices.clear();
-	m_pPreviouslyCalculatedBezierVertices.clear();
 	SAFE_RELEASE(m_pConstantDescHeap);
 	SAFE_RELEASE(m_pConstantUploadHeap);
 	//DELET THIS, hihi
 }
 
-void BezierClass::CalculateBezierVertices(/*&commandList*/)
+void BezierClass::CalculateBezierVertices()
 {
-	int nrOfVertices = 1; //temp, set to number of vertices so we can loop for each vertex and calculate bezier offset
 
-	for (int i = 0; i < nrOfVertices; i++)
+	//Change entire function to take vector containing vertices from Plane() and offset Y value randomly then pushback and memcpy
+	float4 test;
+	test.x = -5.0f;
+	test.y = 0.0f;
+	test.z = 10.0f;
+	test.w = 1.0f;
+
+	float4 test2;
+	test2.x = 0.0f;
+	test2.y = 5.0f;
+	test2.z = 10.0f;
+	test2.w = 1.0f;
+
+	float4 test3;
+	test3.x = 5.0f;
+	test3.y = 0.0f;
+	test3.z = 10.0f;
+	test3.w = 1.0f;
+
+	m_pBezierVertices.push_back(test);
+	m_pBezierVertices.push_back(test2);
+	m_pBezierVertices.push_back(test3);
+
+	memcpy(m_address, reinterpret_cast<void*>(&m_pBezierVertices), m_nrOfVertices * sizeof(float4));
+
+	return;
+}
+
+void BezierClass::UpdateBezierVertices()
+{
+	for (int i = 0; i < m_nrOfVertices; ++i)
 	{
-		//Change line below to actual Bézier calculationusing previous frame's bezier point
-		float4 previousBezierWithOffset = m_pPreviouslyCalculatedBezierVertices[i]; //previousBezierWithOffset will be m_pPreviouslyCalculatedBezierVertices[i] with an offset
-
-		m_pBezierVertices.push_back(previousBezierWithOffset);
-		m_pPreviouslyCalculatedBezierVertices[i] = previousBezierWithOffset; //update for next frame
+		m_pBezierVertices[i] = m_pBezierVertices[i]; //change to a random Y factor, something like comment below this line
+		//m_pBezierVertices[i].y = random value between ??? 0 and 10???
 	}
 
-	m_pPreviouslyCalculatedBezierVertices = m_pBezierVertices;
+	memcpy(m_address, reinterpret_cast<void*>(&m_pBezierVertices), m_nrOfVertices * sizeof(float4));
+}
 
-	//update commandList with new vertices from m_pBezierVertices
-	return;
+void BezierClass::BindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
+{
+	pCL->SetGraphicsRootConstantBufferView(1, m_pConstantUploadHeap->GetGPUVirtualAddress()); //Bind to shader register 
 }
