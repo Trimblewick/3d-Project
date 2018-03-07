@@ -10,7 +10,6 @@ Debug*
 *.opendb
 /uml.png
 *.tlog
-*.vcxproj
 .vs/*
 x64/*
 bin/

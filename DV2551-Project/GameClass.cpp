@@ -116,7 +116,7 @@ bool GameClass::Initialize(Window* pWindow)
 	descRS.Flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	
 
-	tempRS = m_pD3DFactory->CreateRS(&descRS);
+	m_pRS = m_pD3DFactory->CreateRS(&descRS);
 
 	ID3DBlob* pVSblob = m_pD3DFactory->CompileShader(L"VertexShader2.hlsl", "vs_5_1");
 	ID3DBlob* pPSblob = m_pD3DFactory->CompileShader(L"PixelShader.hlsl", "ps_5_1");
@@ -144,15 +144,21 @@ bool GameClass::Initialize(Window* pWindow)
 	descPSO.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
 	descPSO.SampleDesc = descSample;
 	descPSO.SampleMask = 0xffffffff;
-	descPSO.pRootSignature = tempRS;
+	descPSO.pRootSignature = m_pRS;
 	descPSO.InputLayout = inputLayoutDesc;
 
-	tempPSO = m_pD3DFactory->CreatePSO(&descPSO);
+	m_pPSO = m_pD3DFactory->CreatePSO(&descPSO);
 
 	SAFE_RELEASE(pVSblob);
 	SAFE_RELEASE(pPSblob);
 
 	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
+
+	ID3D12GraphicsCommandList* pCL = m_pCopyHighway->GetFreshCL();
+	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16);
+	m_pCopyHighway->QueueCL(pCL);
+	m_pCopyHighway->Wait(m_pCopyHighway->ExecuteCQ());
+
 
 	//Create Bezier
 	m_nrOfVertices = 3; //change to 16
@@ -196,8 +202,10 @@ void GameClass::CleanUp()
 		SAFE_RELEASE(m_ppRTV[i]);
 	}
 	SAFE_RELEASE(m_pDHRTV);
-	SAFE_RELEASE(tempPSO);
-	SAFE_RELEASE(tempRS);
+	SAFE_RELEASE(m_pPSO);
+	SAFE_RELEASE(m_pRS);
+
+
 
 
 
@@ -250,8 +258,6 @@ void GameClass::TransitionBackBufferIntoRenderTargetState()
 	m_pGraphicsHighway->QueueCL(pCL);
 }
 
-
-bool waduheck = false;
 void GameClass::Frame()
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
@@ -264,25 +270,17 @@ void GameClass::Frame()
 	pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
 	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
 
-	pCL->SetGraphicsRootSignature(tempRS);
-	pCL->SetPipelineState(tempPSO);
+	pCL->SetGraphicsRootSignature(m_pRS);
+	pCL->SetPipelineState(m_pPSO);
 
 	m_pCamera->BindCamera(pCL, iBufferIndex);
 	m_pBezierClass->BindBezier(pCL, iBufferIndex);
 
-	pCL->SetPipelineState(tempPSO);
-	if (!waduheck)
-	{
-		waduheck = true;
-		m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16);
-
-		pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-		//pCL->DrawInstanced(3, 1, 0, 0);
-	}
-	else
-	{
-		m_pPlane->bind(pCL);
-	}
+	m_pBezierClass->BindBezier(pCL, iBufferIndex);
+	pCL->SetPipelineState(m_pPSO);
+	
+	m_pPlane->bind(pCL);
+	
 	
 	m_pGraphicsHighway->QueueCL(pCL);
 
