@@ -53,6 +53,7 @@ bool GameClass::Initialize(Window* pWindow)
 		DxAssert(m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_ppRTV[i])));
 		m_pD3DFactory->GetDevice()->CreateRenderTargetView(m_ppRTV[i], nullptr, handleDH);
 		handleDH.ptr += m_iIncrementSizeRTV;
+		m_pRTVWaitIndex[i] = 0;
 	}
 	m_pClearColor[0] = 0.1f;
 	m_pClearColor[1] = 0.5f;
@@ -217,10 +218,12 @@ void GameClass::CleanUp()
 	}
 
 }
-
+int test = 0;
 void GameClass::Update(Input * pInput, double dDeltaTime)
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
+	
+	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
 	m_dDeltaTime = dDeltaTime;
 
 	/*for (int i = 0; i < 1; ++i)
@@ -248,6 +251,7 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 void GameClass::TransitionBackBufferIntoRenderTargetState()
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
+	
 	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
 
 	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
@@ -271,19 +275,17 @@ void GameClass::Frame()
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
-	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
+	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
 
 	pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
 	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
 
 	pCL->SetGraphicsRootSignature(m_pRS);
-	pCL->SetPipelineState(m_pPSO);
 
 	m_pCamera->BindCamera(pCL, iBufferIndex);
 	m_pBezierClass->BindBezier(pCL, iBufferIndex);
 
 	m_pBezierClass->BindBezier(pCL, iBufferIndex);
-	pCL->SetPipelineState(m_pPSO);
 	
 	m_pPlane->bind(pCL);
 	
@@ -331,10 +333,7 @@ void GameClass::PresentBackBuffer()
 
 	m_pGraphicsHighway->QueueCL(pCL);
 
-
-	int test = m_pGraphicsHighway->ExecuteCQ();
-
+	m_pRTVWaitIndex[iBufferIndex] = m_pGraphicsHighway->ExecuteCQ();
 
 	m_pSwapChain->Present(0, 0);
-	m_pGraphicsHighway->Wait(test);
 }
