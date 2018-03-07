@@ -21,8 +21,8 @@ public:
 	BezierClass();
 	BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource* pResource, uint8_t* address, int nrOfVertices);
 	~BezierClass();
-	void CalculateBezierVertices();
-	void UpdateBezierVertices();
+	void CalculateBezierPoints();
+	void UpdateBezierPoints();
 	void BindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex);
 
 private:
@@ -30,7 +30,7 @@ private:
 	
 
 	//private variables
-	std::vector<float4>					m_pBezierVertices;
+	std::vector<float4>					m_pBezierPoints;
 	int									m_nrOfVertices;
 	uint8_t*							m_address;
 

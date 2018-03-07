@@ -20,14 +20,14 @@ BezierClass::BezierClass(ID3D12DescriptorHeap * pDH, ID3D12Resource* pResource, 
 
 BezierClass::~BezierClass()
 {
-	m_pBezierVertices.clear();
+	m_pBezierPoints.clear();
 	SAFE_RELEASE(m_pConstantDescHeap);
 	SAFE_RELEASE(m_pConstantUploadHeap);
 	delete m_address;
 	//DELET THIS, hihi
 }
 
-void BezierClass::CalculateBezierVertices()
+void BezierClass::CalculateBezierPoints()
 {
 	//Change entire function to take nrOfVertices from PLane(), choose a couple of them and offset them in Y
 	float4 test;
@@ -48,20 +48,20 @@ void BezierClass::CalculateBezierVertices()
 	test3.z = 10.0f;
 	test3.w = 1.0f;
 
-	m_pBezierVertices.push_back(test);
-	m_pBezierVertices.push_back(test2);
-	m_pBezierVertices.push_back(test3);
+	m_pBezierPoints.push_back(test);
+	m_pBezierPoints.push_back(test2);
+	m_pBezierPoints.push_back(test3);
 
-	memcpy(m_address, m_pBezierVertices.data(), m_nrOfVertices * sizeof(float4));
+	memcpy(m_address, m_pBezierPoints.data(), m_nrOfVertices * sizeof(float4));
 
 	return;
 }
 
-void BezierClass::UpdateBezierVertices()
+void BezierClass::UpdateBezierPoints()
 {
 	for (int i = 0; i < m_nrOfVertices; ++i)
 	{
-		m_pBezierVertices[i] = m_pBezierVertices[i]; //change to a random Y factor, something like comment below this line
+		m_pBezierPoints[i] = m_pBezierPoints[i]; //change to a random Y factor, something like comment below this line
 		//m_pBezierVertices[i].y = random value between ??? 0 and 10???
 	}
 

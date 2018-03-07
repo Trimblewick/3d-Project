@@ -147,7 +147,7 @@ bool GameClass::Initialize(Window* pWindow)
 	//Create Bezier
 	m_nrOfVertices = 3; //change to nrOfVertices which we get from plane class
 	m_pBezierClass = m_pD3DFactory->CreateBezier(m_nrOfVertices);
-	m_pBezierClass->CalculateBezierVertices(/*m_pPlaneClass->GetVertices()*/); //send vertices from plane and offset Y
+	m_pBezierClass->CalculateBezierPoints(/*m_pPlaneClass->GetVertices()*/); //send vertices from plane and offset Y
 
 	return true;
 }
@@ -197,7 +197,7 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	int iFrameIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	m_dDeltaTime = dDeltaTime;
 	m_pCamera->Update(pInput, dDeltaTime, iFrameIndex);
-	m_pBezierClass->UpdateBezierVertices(); //Calculates Bézier vertices
+	m_pBezierClass->UpdateBezierPoints(); //Calculates Bézier vertices
 	ID3D12GraphicsCommandList* pCLtest = ClearBackBuffer();
 	PresentBackBuffer(pCLtest);
 }

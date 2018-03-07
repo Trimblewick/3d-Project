@@ -33,5 +33,5 @@ public:
 private:
 	IDXGIFactory4*							m_pDXGIFactory;
 	ID3D12Device*							m_pDevice;
-	std::vector<float4>						m_pBezierVertices;
+	std::vector<float4>						m_pBezierPoints;
 };

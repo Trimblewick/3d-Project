@@ -276,7 +276,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 		test.y = 0.0f;
 		test.z = 1.0f;
 		test.w = 1.0f;
-		m_pBezierVertices.push_back(test);
+		m_pBezierPoints.push_back(test);
 	}
 
 	//Set resource desc
@@ -319,7 +319,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 	uint8_t* address;
 	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address)); 
-	memcpy(address, m_pBezierVertices.data(), /*sizeof(m_pBezierVertices)*sizeof(float4)*/nrOfVertices * sizeof(float4));
+	memcpy(address, m_pBezierPoints.data(), /*sizeof(m_pBezierVertices)*sizeof(float4)*/nrOfVertices * sizeof(float4));
 
 	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, nrOfVertices);
 	
