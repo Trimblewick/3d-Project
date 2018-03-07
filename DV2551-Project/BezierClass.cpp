@@ -29,7 +29,7 @@ BezierClass::~BezierClass()
 
 void BezierClass::CalculateBezierPoints(int width)
 {
-	//width = width - 1;
+	width = width - 1;
 	float grid = width / 3.0f;
 	for (int i = 0; i < 4; ++i)
 	{
