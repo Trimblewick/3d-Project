@@ -75,7 +75,7 @@ void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 		if (!m_pFenceLocked[i])
 		{
 			m_ppCLQ[i].push_back(pCL);
-			m_pIndexCLQ->push_back(iLock);
+			m_pIndexCLQ[i].push_back(iLock);
 			break;
 		}
 	}
