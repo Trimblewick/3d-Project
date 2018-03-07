@@ -18,9 +18,9 @@ public:
 
 	std::vector<float4>* GetVertices();
 	std::vector<DWORD>* GetIndices();
-
+	unsigned int GetWidth();
 private:
-	unsigned int					m_uiSize;
+	unsigned int					m_uiWidth;
 	std::vector<float4>				m_pVerts;
 	std::vector<DWORD>				m_pIndices;
 
