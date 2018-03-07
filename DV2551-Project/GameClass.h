@@ -30,6 +30,7 @@ private:
 	double							m_dDeltaTime;
 	float							m_pClearColor[4];
 	int								m_nrOfVertices;
+	int								m_nrOfPatches;
 
 	D3DFactory*						m_pD3DFactory;
 	GPUHighway*						m_pGraphicsHighway;

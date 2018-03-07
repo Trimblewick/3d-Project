@@ -166,7 +166,8 @@ bool GameClass::Initialize(Window* pWindow)
 	int planeWidth = m_pPlane->GetWidth();
 	m_nrOfVertices = 16;
 	m_pBezierClass = m_pD3DFactory->CreateBezier(m_nrOfVertices);
-	m_pBezierClass->CalculateBezierPoints(planeWidth);
+	m_pBezierClass->CalculateBezierPoints(planeWidth/*, 2*/);
+	m_nrOfPatches = 1; //must be 1 or factor of 2
 
 	return true;
 }
@@ -219,6 +220,7 @@ void GameClass::CleanUp()
 	}
 
 }
+
 int test = 0;
 void GameClass::Update(Input * pInput, double dDeltaTime)
 {
@@ -228,10 +230,19 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	
 	m_dDeltaTime = dDeltaTime;
 
-	/*for (int i = 0; i < 1; ++i)
-	{
+	//for (int x = 0; x < m_nrOfPatches; ++x)
+	//{
+	//	for (int y = 0; m_nrOfPatches; ++y)
+	//	{
+	//		
+	//		/*freshCL;
+	//		//update bPoints(x, y)
+	//		queueCL
+	//		executeCL*/
+	//	}
+	//	
+	//}
 
-	}*/
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 
 	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
@@ -244,7 +255,7 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	
 	TransitionBackBufferIntoRenderTargetState();
 	m_pCopyHighway->Wait(iCameraFence);
-	
+
 	Frame();
 	PresentBackBuffer();
 }
