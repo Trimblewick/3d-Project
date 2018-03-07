@@ -15,7 +15,7 @@ cbuffer camera : register(b0)
 
 cbuffer bezier : register(b1)
 {
-	float4 bezierVertices[3];
+	float4 bezierVertices[16];
 };
 
 

@@ -21,7 +21,7 @@ GPUHighway::GPUHighway(D3D12_COMMAND_LIST_TYPE type, ID3D12CommandQueue* pCQ, ID
 	for (unsigned int i = 0; i < iNumberOfCLs; ++i)
 	{
 		m_pCLLock[i] = i;
-		m_pFenceValues[i] = 0;
+		m_pFenceValues[i] = 5;
 		m_pFenceLocked[i] = false;
 	}
 
@@ -75,13 +75,13 @@ void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
 		if (!m_pFenceLocked[i])
 		{
 			m_ppCLQ[i].push_back(pCL);
-			m_pIndexCLQ->push_back(iLock);
+			m_pIndexCLQ[i].push_back(iLock);
 			break;
 		}
 	}
 }
 
-ID3D12GraphicsCommandList* GPUHighway::GetFreshCL()
+ID3D12GraphicsCommandList* GPUHighway::GetFreshCL(ID3D12PipelineState* pPSO)
 {
 	ID3D12GraphicsCommandList* pCL = nullptr;
 	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
@@ -89,7 +89,7 @@ ID3D12GraphicsCommandList* GPUHighway::GetFreshCL()
 		if (m_pCLLock[i] == i)
 		{
 			pCL = m_ppCLs[i];
-			pCL->Reset(m_ppCAs[i], nullptr);
+			pCL->Reset(m_ppCAs[i], pPSO);
 			break;
 		}
 	}
@@ -112,7 +112,7 @@ int GPUHighway::ExecuteCQ()
 	
 	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
 	{
-		if (!m_pFenceLocked[i])
+		if (!m_pFenceLocked[i])//find first free fence
 		{
 			m_pCQ->Signal(m_ppFences[i], m_pFenceValues[i]);
 			index = i;

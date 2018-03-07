@@ -15,19 +15,20 @@ cbuffer camera : register(b0)
 
 cbuffer bezier : register(b1)
 {
-	float4 bezierVertices[3];
+	float4 bezierVertices[16];
 }
 
 float4 main( uint id : SV_VERTEXID/*float4 pos : POSITION*/ ) : SV_POSITION
 {	
-	//if (id == 0 && /*bezierVertices[0].x < 50.0f && bezierVertices[0].x > -50.0f*/bezierVertices[0].x > 5000.0f)
+	//if (id == 0 && bezierVertices[5].x > 5.0f && bezierVertices[5].x < 6.0f && bezierVertices[5].z > 5.0f && bezierVertices[5].z < 6.0f)
 	//{
-	//	return mul(float4(-0.5f, 0.5f, 10.0, 1.0f), vpMat);
+	//	return mul(float4(-2.0f, 0.5f, 10.0, 1.0f), vpMat);
+	//	//return mul(float4(-5.0f, 5.0f, 10.0, 1.0f), vpMat);
 	//	//return mul(bezierVertices[0], vpMat);
 	//}
 	if (id == 0)
 	{
-		return mul(float4(-0.5f, 0.5f, 10.0, 1.0f), vpMat);
+		return mul(float4(0.5f, 0.5f, 10.0, 1.0f), vpMat);
 		//return mul(float4(-5.0f, 5.0f, 10.0, 1.0f), vpMat);
 		//return mul(bezierVertices[0], vpMat);
 	}
@@ -41,4 +42,5 @@ float4 main( uint id : SV_VERTEXID/*float4 pos : POSITION*/ ) : SV_POSITION
 		return mul(float4(0.5f, 0.5f, 5.0, 1.0f), vpMat);
 		//return mul(bezierVertices[2], vpMat);
 	}
+	//return mul(bezierVertices[id], vpMat);
 }
