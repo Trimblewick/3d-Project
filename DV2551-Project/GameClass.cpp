@@ -254,7 +254,6 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	TransitionBackBufferIntoRenderTargetState();
 	m_pCopyHighway->Wait(iCameraFence);
 
-	TransitionBackBufferIntoRenderTargetState();
 	Frame();
 	
 	PresentBackBuffer();
