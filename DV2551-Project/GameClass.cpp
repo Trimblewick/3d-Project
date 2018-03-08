@@ -158,10 +158,35 @@ bool GameClass::Initialize(Window* pWindow)
 
 	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
 
+	D3D12_HEAP_PROPERTIES heapPropUpload;
+	heapPropUpload.Type = D3D12_HEAP_TYPE_UPLOAD;
+	heapPropUpload.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapPropUpload.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapPropUpload.VisibleNodeMask = 1;
+	heapPropUpload.CreationNodeMask = 1;
+
+	D3D12_RESOURCE_DESC descHeap;
+	descHeap.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	descHeap.Alignment = 0;
+	descHeap.Width = 65536;
+	descHeap.Height = 1;
+	descHeap.DepthOrArraySize = 1;
+	descHeap.MipLevels = 1;
+	descHeap.Format = DXGI_FORMAT_UNKNOWN;
+	descHeap.SampleDesc.Count = 1;
+	descHeap.SampleDesc.Quality = 0;
+	descHeap.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	descHeap.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	ID3D12Resource* pUploadHeapVertexBuffer = m_pD3DFactory->CreateCommitedResource(&heapPropUpload, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
+	ID3D12Resource* pUploadHeapIndexBuffer = m_pD3DFactory->CreateCommitedResource(&heapPropUpload, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
+
 	ID3D12GraphicsCommandList* pCL = m_pCopyHighway->GetFreshCL();
-	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16);
+	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16, pUploadHeapVertexBuffer, pUploadHeapIndexBuffer);
 	m_pCopyHighway->QueueCL(pCL);
 	m_pCopyHighway->Wait(m_pCopyHighway->ExecuteCQ());
+	SAFE_RELEASE(pUploadHeapVertexBuffer);//Only for init...
+	SAFE_RELEASE(pUploadHeapIndexBuffer);
 
 
 	//Create Bezier
@@ -289,22 +314,19 @@ void GameClass::Frame()
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
-	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
 
-	pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
-	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
+	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
+	pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
 
-	pCL->SetGraphicsRootSignature(m_pRS);
+	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
+	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
+	m_pPlane->bind(pGraphicsCL);
 
-	m_pCamera->BindCamera(pCL, iBufferIndex);
-	m_pBezierClass->BindBezier(pCL, iBufferIndex);
 
-	//m_pBezierClass->BindBezier(pCL, iBufferIndex);
+	m_pBezierClass->BindBezier(pGraphicsCL, iBufferIndex);
 	
-	m_pPlane->bind(pCL);
-	
-	
-	m_pGraphicsHighway->QueueCL(pCL);
+	m_pGraphicsHighway->QueueCL(pGraphicsCL);
 
 	//update<-cpu
 	//copy<-Q->fence1
