@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "BezierClass.h"
 #include <time.h>
+#include <chrono>
 
 //TODO: Quick test bind cbuffer to shader and see if values get through 
 //		memcpy new cbuffer data in update loop every frame to cbuffer??
@@ -33,6 +34,11 @@ void BezierClass::CalculateBezierPoints(int width/*, int x, int y*/)
 	std::srand(time(NULL));
 	float grid = width / 3.0f;
 
+	for (int x = 0; x < 16; ++x)
+	{
+		m_pDeltaTime[x] = rand() % 20 - 10;
+	}
+
 	////For every patch in X
 	//for (int x = 0; x < patchWidth; ++x)
 	//{
@@ -46,7 +52,7 @@ void BezierClass::CalculateBezierPoints(int width/*, int x, int y*/)
 				{
 					float4 temp;
 					temp.x = grid*j/* + width * x*/;
-					temp.y = rand() % 20 - 10;
+					temp.y = sin(m_pDeltaTime[j + i*4]) / 2.0;
 					temp.z = grid * i/* + width * y*/;
 					temp.w = 1.0f;
 
@@ -58,11 +64,12 @@ void BezierClass::CalculateBezierPoints(int width/*, int x, int y*/)
 	memcpy(m_address, m_pBezierPoints.data(), m_nrOfVertices * sizeof(float4));
 }
 
-void BezierClass::UpdateBezierPoints()
+void BezierClass::UpdateBezierPoints(double deltaTime)
 {
 	for (int i = 0; i < m_pBezierPoints.size(); ++i)
 	{
-		m_pBezierPoints[i].y = m_pBezierPoints[i].y + (rand() % 20 - 10)/100.0f; //change to a random Y factor, something like comment below this line
+		m_pDeltaTime[i] += deltaTime;
+		m_pBezierPoints[i].y = sin(m_pDeltaTime[i]) / 2.0; //change to a random Y factor, something like comment below this line
 		//m_pBezierPoints[i].y = m_pBezierPoints[i].y;//random value between ??? 0 and 10???
 	}
 

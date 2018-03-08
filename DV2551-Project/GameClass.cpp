@@ -246,7 +246,7 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 
 	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
-	m_pBezierClass->UpdateBezierPoints(); //Calculates Bézier vertices
+	m_pBezierClass->UpdateBezierPoints(dDeltaTime); //Calculates Bézier vertices
 	//m_pBezierClass->BindBezier(pCopyCL, iBufferIndex); ???
 
 	
