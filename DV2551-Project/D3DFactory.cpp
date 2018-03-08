@@ -252,25 +252,27 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 	descResource.MipLevels = 1;
 	descResource.SampleDesc.Count = 1;
 	descResource.SampleDesc.Quality = 0;
-	descResource.Width = 65536; //1024*64 ->64kb aligned for buffers
+	descResource.Width = 65536;					//is there any reason not to have a 64kb width since it will be constant? alignment? Would it be faster to have a fixed size matching the buffer struct?
 	
 	ID3D12DescriptorHeap* pDH = CreateDH(3, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	int iIncrementSizeCBV = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = pDH->GetCPUDescriptorHandleForHeapStart();
+
 	unsigned char** ppBufferAddressPointer = new unsigned char*;
 	ID3D12Resource** ppBufferMatrix = new ID3D12Resource*[iBufferCount];
-	ID3D12Resource*	pUploadHeap;
+	ID3D12Resource*	pUploadHeap = CreateCommitedResource(&heapProp, &descResource, D3D12_RESOURCE_STATE_GENERIC_READ);
+
+	heapProp.Type = D3D12_HEAP_TYPE_DEFAULT;//<-- reuse heapprop for matrixbuffer
 	D3D12_CONSTANT_BUFFER_VIEW_DESC descCB = {};
 	descCB.SizeInBytes = sizeof(data);
-	DxAssert(m_pDevice->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE, 
-		&descResource, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&pUploadHeap)));
 
-	heapProp.Type = D3D12_HEAP_TYPE_DEFAULT;
+	
 	for (unsigned int i = 0; i < iBufferCount; ++i)
 	{
-		m_pDevice->CreateCommittedResource(&heapProp, D3D12_HEAP_FLAG_NONE, &descResource, D3D12_RESOURCE_STATE_COPY_DEST, NULL, IID_PPV_ARGS(&ppBufferMatrix[i]));
-	
+		ppBufferMatrix[i] = CreateCommitedResource(&heapProp, &descResource, D3D12_RESOURCE_STATE_COPY_DEST);
+
 		descCB.BufferLocation = ppBufferMatrix[i]->GetGPUVirtualAddress();
+
 		m_pDevice->CreateConstantBufferView(&descCB, handleDH);
 		handleDH.ptr += iIncrementSizeCBV;
 	}

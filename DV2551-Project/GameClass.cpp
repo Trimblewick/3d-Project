@@ -312,22 +312,19 @@ void GameClass::Frame()
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
-	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
 
-	pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
-	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
+	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
+	pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
 
-	pCL->SetGraphicsRootSignature(m_pRS);
+	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
+	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
+	m_pPlane->bind(pGraphicsCL);
 
-	m_pCamera->BindCamera(pCL, iBufferIndex);
-	m_pBezierClass->BindBezier(pCL, iBufferIndex);
 
-	//m_pBezierClass->BindBezier(pCL, iBufferIndex);
+	m_pBezierClass->BindBezier(pGraphicsCL, iBufferIndex);
 	
-	m_pPlane->bind(pCL);
-	
-	
-	m_pGraphicsHighway->QueueCL(pCL);
+	m_pGraphicsHighway->QueueCL(pGraphicsCL);
 
 	//update<-cpu
 	//copy<-Q->fence1
