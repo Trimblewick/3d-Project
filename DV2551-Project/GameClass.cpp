@@ -157,14 +157,14 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
 
 	ID3D12GraphicsCommandList* pCL = m_pCopyHighway->GetFreshCL();
-	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 4);
+	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16);
 	m_pCopyHighway->QueueCL(pCL);
 	m_pCopyHighway->Wait(m_pCopyHighway->ExecuteCQ());
 
 
 	//Create Bezier
 	int planeWidth = m_pPlane->GetWidth();
-	m_nrOfVertices = 4;
+	m_nrOfVertices = 16;
 	m_pBezierClass = m_pD3DFactory->CreateBezier(m_nrOfVertices);
 	m_pBezierClass->CalculateBezierPoints(planeWidth/*, 2*/);
 	m_nrOfPatches = 1; //must be 1 or factor of 2

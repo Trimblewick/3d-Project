@@ -498,11 +498,11 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	{
 		for (unsigned int j = 0; j < (uiWidth - 1); ++j)
 		{
-			pIndices.push_back(i * uiWidth + j);
 			pIndices.push_back(i * uiWidth + j + uiWidth);
-			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
 			pIndices.push_back(i * uiWidth + j);
 			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
+			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
+			pIndices.push_back(i * uiWidth + j);
 			pIndices.push_back(i * uiWidth + j + 1);
 		}
 	}
