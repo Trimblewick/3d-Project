@@ -151,7 +151,6 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="common.h" />
     <ClInclude Include="D3DFactory.h" />
-    <ClInclude Include="d3dx12.h" />
     <ClInclude Include="GameClass.h" />
     <ClInclude Include="GPUHighway.h" />
     <ClInclude Include="Plane.h" />
