@@ -30,6 +30,7 @@ BezierClass::~BezierClass()
 void BezierClass::CalculateBezierPoints(int width/*, int x, int y*/)
 {
 	//int patchWidth = sqrt(nrOfPatches);
+	std::srand(time(NULL));
 	float grid = width / 3.0f;
 
 	////For every patch in X
