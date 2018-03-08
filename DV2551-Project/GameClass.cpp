@@ -164,16 +164,13 @@ bool GameClass::Initialize(Window* pWindow)
 
 	//Create Bezier
 	int planeWidth = m_pPlane->GetWidth();
-	
-	m_nrOfPatchesWidthX = 1;
-	m_nrOfPatchesWidthZ = 1; 
 
-	for (int z = 0; z < m_nrOfPatchesWidthZ; ++z)
+	for (int z = 0; z < 2; ++z)
 	{
-		for (int x = 0; x < m_nrOfPatchesWidthX; ++x)
+		for (int x = 0; x < 2; ++x)
 		{
-			m_pBezierClass[x + z*m_nrOfPatchesWidthZ] = m_pD3DFactory->CreateBezier(16);
-			m_pBezierClass[x + z*m_nrOfPatchesWidthZ]->CalculateBezierPoints(planeWidth, x, z);
+			m_pBezierClass[x + z*2] = m_pD3DFactory->CreateBezier(16);
+			m_pBezierClass[x + z*2]->CalculateBezierPoints(planeWidth, x, z);
 		}
 	}
 
@@ -243,21 +240,14 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 
 	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
-	int width = m_pPlane->GetWidth();
 
-	for (int z = 0; z < m_nrOfPatchesWidthZ; ++z)
+	//Update all Bézier points
+	for (int i = 0; i < 4; ++i)
 	{
-		for (int x = 0; x < m_nrOfPatchesWidthX; ++x)
-		{
-			//grab fresh CL
-			m_pBezierClass[x + z * m_nrOfPatchesWidthZ]->UpdateBezierPoints(dDeltaTime, x, z, width); //Calculates Bézier vertices
-			//queue CL
-			//exectute CQ
-		}
-	}
-	//m_pBezierClass->BindBezier(pCopyCL, iBufferIndex); ???
+		m_pBezierClass[i]->UpdateBezierPoints(dDeltaTime);
+	}	
 
-	
+
 	m_pCopyHighway->QueueCL(pCopyCL);
 	int iCameraFence = m_pCopyHighway->ExecuteCQ();
 	
@@ -295,26 +285,26 @@ void GameClass::Frame()
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
-	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
-
-	pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
-	pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
-
-	pCL->SetGraphicsRootSignature(m_pRS);
-
-	m_pCamera->BindCamera(pCL, iBufferIndex);
-	for (int i = 0; i < sizeof(m_pBezierClass); ++i)
+	//Queue all patches
+	for (int i = 0; i < 4; ++i)
 	{
-		m_pBezierClass[i]->BindBezier(pCL, iBufferIndex);
-	}
-	
+		ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
 
-	//m_pBezierClass->BindBezier(pCL, iBufferIndex);
-	
-	m_pPlane->bind(pCL);
-	
-	
-	m_pGraphicsHighway->QueueCL(pCL);
+		if(i == 0)
+			pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
+
+		pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
+		pCL->SetGraphicsRootSignature(m_pRS);
+
+		//Bind to command list
+		m_pCamera->BindCamera(pCL, iBufferIndex);
+		m_pPlane->bind(pCL);
+		m_pBezierClass[i]->BindBezier(pCL, iBufferIndex);
+
+		//Queue command list
+		m_pGraphicsHighway->QueueCL(pCL);
+	}
+
 
 	//update<-cpu
 	//copy<-Q->fence1

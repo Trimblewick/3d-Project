@@ -55,9 +55,9 @@ void BezierClass::CalculateBezierPoints(int width, int x, int z)
 }
 
 
-void BezierClass::UpdateBezierPoints(double deltaTime, int x, int z, int patchWidth)
+void BezierClass::UpdateBezierPoints(double deltaTime)
 {
-	for (int i = 0; i < m_pBezierPoints.size() - 1; ++i)
+	for (int i = 0; i < m_pBezierPoints.size(); ++i)
 	{
 		m_pDeltaTime[i] += deltaTime;
 
@@ -71,4 +71,9 @@ void BezierClass::UpdateBezierPoints(double deltaTime, int x, int z, int patchWi
 void BezierClass::BindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
 {
 	pCL->SetGraphicsRootConstantBufferView(1, m_pConstantUploadHeap->GetGPUVirtualAddress()); //Bind to shader register 
+}
+
+void BezierClass::UnbindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
+{
+	//UNbind
 }

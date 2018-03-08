@@ -36,7 +36,7 @@ private:
 	GPUHighway*						m_pGraphicsHighway;
 	GPUHighway*						m_pCopyHighway;
 	Camera*							m_pCamera;
-	BezierClass*					m_pBezierClass[2];
+	BezierClass*					m_pBezierClass[4];
 	Plane*							m_pPlane;
 
 	IDXGISwapChain3*				m_pSwapChain;
