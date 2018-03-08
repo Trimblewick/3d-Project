@@ -343,23 +343,6 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 			pVerts.push_back(float2{ (float)j / (float)tiles, (float)i / (float)tiles });
 		}
 	}
-	unsigned int uiNumIndices = (uiWidth - 1) * (uiWidth - 1) * 6;
-	std::vector<DWORD> pIndices;
-	pIndices.reserve(uiNumIndices);
-
-	for (unsigned int i = 0; i < (uiWidth - 1); ++i)
-	{
-		for (unsigned int j = 0; j < (uiWidth - 1); ++j)
-		{
-			pIndices.push_back(i * uiWidth + j);
-			pIndices.push_back(i * uiWidth + j + uiWidth);
-			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
-			pIndices.push_back(i * uiWidth + j);
-			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
-			pIndices.push_back(i * uiWidth + j + 1);
-		}
-	}
-
 	float2* vList = pVerts.data();
 	int vBufferSize = sizeof(float2) * pVerts.size();
 	
@@ -428,8 +411,8 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	
 	D3D12_SUBRESOURCE_DATA vertexData = {};
 	vertexData.pData = reinterpret_cast<BYTE*>(vList);
-	vertexData.RowPitch = uploadDesc.Width;
-	vertexData.SlicePitch = uploadDesc.Width; //both are supposed to be size in bytes of all triangles...
+	vertexData.RowPitch = vBufferSize;
+	vertexData.SlicePitch = vBufferSize; //both are supposed to be size in bytes of all triangles...
 
 	UpdateSubresources(pCmdList, pVBuffer, pVBUpload, 0, 0, 1, &vertexData);
 
@@ -501,17 +484,29 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 
 	D3D12_VERTEX_BUFFER_VIEW vbView;
 	vbView.BufferLocation = pVBuffer->GetGPUVirtualAddress();
-	vbView.StrideInBytes = sizeof(float4);
+	vbView.StrideInBytes = sizeof(float2);
 	vbView.SizeInBytes = vBufferSize;
 	
 
 	//Index buffer-----------------------
 
-	//DWORD iList[] = {
-	//	0, 1, 2, // first triangle
-	//	0, 3, 1 // second triangle
-	//};
-	//int iBufferSize = sizeof(iList);
+	unsigned int uiNumIndices = (uiWidth - 1) * (uiWidth - 1) * 6;
+	std::vector<DWORD> pIndices;
+	pIndices.reserve(uiNumIndices);
+
+	for (unsigned int i = 0; i < (uiWidth - 1); ++i)
+	{
+		for (unsigned int j = 0; j < (uiWidth - 1); ++j)
+		{
+			pIndices.push_back(i * uiWidth + j + uiWidth);
+			pIndices.push_back(i * uiWidth + j);
+			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
+			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
+			pIndices.push_back(i * uiWidth + j);
+			pIndices.push_back(i * uiWidth + j + 1);
+		}
+	}
+
 
 	DWORD *iList = pIndices.data();
 	int iBufferSize = sizeof(DWORD) * pIndices.size();
@@ -660,3 +655,4 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	return new Plane(tiles, pVBuffer, vbView, pIBuffer, ibView);
 
 }
+

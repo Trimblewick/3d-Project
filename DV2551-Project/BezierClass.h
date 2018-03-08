@@ -15,8 +15,8 @@ public:
 	BezierClass();
 	BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource* pResource, uint8_t* address, int nrOfVertices);
 	~BezierClass();
-	void CalculateBezierPoints(int width/*, int nrOfPatches*/);
-	void UpdateBezierPoints(double deltaTime);
+	void CalculateBezierPoints(int width, int x, int z);
+	void UpdateBezierPoints(double deltaTime, int x, int z, int patchWidth);
 	void BindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex);
 
 private:

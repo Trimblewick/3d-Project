@@ -1,12 +1,8 @@
 #include "stdafx.h"
 #include "BezierClass.h"
 #include <time.h>
-#include <chrono>
-
-//TODO: Quick test bind cbuffer to shader and see if values get through 
-//		memcpy new cbuffer data in update loop every frame to cbuffer??
-//		m_pBezierVertices used in D3DFactory original memcpy only has 3 vertices
-//		
+#include <stdlib.h>
+	
 
 BezierClass::BezierClass(/**/)
 {
@@ -20,17 +16,18 @@ BezierClass::BezierClass(ID3D12DescriptorHeap * pDH, ID3D12Resource* pResource, 
 	m_address = address;
 }
 
+
 BezierClass::~BezierClass()
 {
 	m_pBezierPoints.clear();
 	SAFE_RELEASE(m_pConstantDescHeap);
 	SAFE_RELEASE(m_pConstantUploadHeap);
-	//DELET THIS, hihis
+	delete[] m_pDeltaTime;
 }
 
-void BezierClass::CalculateBezierPoints(int width/*, int x, int y*/)
+
+void BezierClass::CalculateBezierPoints(int width, int x, int z)
 {
-	//int patchWidth = sqrt(nrOfPatches);
 	std::srand(time(NULL));
 	float grid = width / 3.0f;
 
@@ -39,42 +36,37 @@ void BezierClass::CalculateBezierPoints(int width/*, int x, int y*/)
 		m_pDeltaTime[x] = rand() % 20 - 10;
 	}
 
-	////For every patch in X
-	//for (int x = 0; x < patchWidth; ++x)
-	//{
-	//	//For every patch in Y
-	//	for (int y = 0; y < patchWidth; ++y)
-	//	{
-			//Do for every patch
-			for (int i = 0; i < 4; ++i)
-			{
-				for (int j = 0; j < 4; ++j)
-				{
-					float4 temp;
-					temp.x = grid*j/* + width * x*/;
-					temp.y = sin(m_pDeltaTime[j + i*4]) / 2.0;
-					temp.z = grid * i/* + width * y*/;
-					temp.w = 1.0f;
-
-					m_pBezierPoints.push_back(temp);
-				}
-			}
-	//	}
-	//}
-	memcpy(m_address, m_pBezierPoints.data(), m_nrOfVertices * sizeof(float4));
-}
-
-void BezierClass::UpdateBezierPoints(double deltaTime)
-{
-	for (int i = 0; i < m_pBezierPoints.size(); ++i)
+	//Do for every patch
+	for (int i = 0; i < 4; ++i)
 	{
-		m_pDeltaTime[i] += deltaTime;
-		m_pBezierPoints[i].y = sin(m_pDeltaTime[i]) / 2.0; //change to a random Y factor, something like comment below this line
-		//m_pBezierPoints[i].y = m_pBezierPoints[i].y;//random value between ??? 0 and 10???
+		for (int j = 0; j < 4; ++j)
+		{
+			float4 temp;
+			temp.x = grid*j + width * x;
+			temp.y = sin(m_pDeltaTime[j + i*4]);
+			temp.z = grid * i + width * z;
+			temp.w = 1.0f;
+
+			m_pBezierPoints.push_back(temp);
+		}
 	}
 
 	memcpy(m_address, m_pBezierPoints.data(), m_nrOfVertices * sizeof(float4));
 }
+
+
+void BezierClass::UpdateBezierPoints(double deltaTime, int x, int z, int patchWidth)
+{
+	for (int i = 0; i < m_pBezierPoints.size() - 1; ++i)
+	{
+		m_pDeltaTime[i] += deltaTime;
+
+		m_pBezierPoints[i].y = sin(m_pDeltaTime[i]);
+	}
+
+	memcpy(m_address, m_pBezierPoints.data(), m_nrOfVertices * sizeof(float4));
+}
+
 
 void BezierClass::BindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
 {

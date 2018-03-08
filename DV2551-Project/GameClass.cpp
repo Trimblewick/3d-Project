@@ -164,10 +164,18 @@ bool GameClass::Initialize(Window* pWindow)
 
 	//Create Bezier
 	int planeWidth = m_pPlane->GetWidth();
-	m_nrOfVertices = 16;
-	m_pBezierClass = m_pD3DFactory->CreateBezier(m_nrOfVertices);
-	m_pBezierClass->CalculateBezierPoints(planeWidth/*, 2*/);
-	m_nrOfPatches = 1; //must be 1 or factor of 2
+	
+	m_nrOfPatchesWidthX = 1;
+	m_nrOfPatchesWidthZ = 1; 
+
+	for (int z = 0; z < m_nrOfPatchesWidthZ; ++z)
+	{
+		for (int x = 0; x < m_nrOfPatchesWidthX; ++x)
+		{
+			m_pBezierClass[x + z*m_nrOfPatchesWidthZ] = m_pD3DFactory->CreateBezier(16);
+			m_pBezierClass[x + z*m_nrOfPatchesWidthZ]->CalculateBezierPoints(planeWidth, x, z);
+		}
+	}
 
 	return true;
 }
@@ -212,11 +220,13 @@ void GameClass::CleanUp()
 
 
 
-
-	if (m_pBezierClass)
+	for (int i = 0; i < sizeof(m_pBezierClass); ++i)
 	{
-		delete m_pBezierClass;
-		m_pBezierClass = nullptr;
+		if (m_pBezierClass[i])
+		{
+			delete m_pBezierClass;
+			m_pBezierClass[i] = nullptr;
+		}
 	}
 
 }
@@ -230,23 +240,21 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	
 	m_dDeltaTime = dDeltaTime;
 
-	//for (int x = 0; x < m_nrOfPatches; ++x)
-	//{
-	//	for (int y = 0; m_nrOfPatches; ++y)
-	//	{
-	//		
-	//		/*freshCL;
-	//		//update bPoints(x, y)
-	//		queueCL
-	//		executeCL*/
-	//	}
-	//	
-	//}
-
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 
 	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
-	m_pBezierClass->UpdateBezierPoints(dDeltaTime); //Calculates Bézier vertices
+	int width = m_pPlane->GetWidth();
+
+	for (int z = 0; z < m_nrOfPatchesWidthZ; ++z)
+	{
+		for (int x = 0; x < m_nrOfPatchesWidthX; ++x)
+		{
+			//grab fresh CL
+			m_pBezierClass[x + z * m_nrOfPatchesWidthZ]->UpdateBezierPoints(dDeltaTime, x, z, width); //Calculates Bézier vertices
+			//queue CL
+			//exectute CQ
+		}
+	}
 	//m_pBezierClass->BindBezier(pCopyCL, iBufferIndex); ???
 
 	
@@ -295,7 +303,11 @@ void GameClass::Frame()
 	pCL->SetGraphicsRootSignature(m_pRS);
 
 	m_pCamera->BindCamera(pCL, iBufferIndex);
-	m_pBezierClass->BindBezier(pCL, iBufferIndex);
+	for (int i = 0; i < sizeof(m_pBezierClass); ++i)
+	{
+		m_pBezierClass[i]->BindBezier(pCL, iBufferIndex);
+	}
+	
 
 	//m_pBezierClass->BindBezier(pCL, iBufferIndex);
 	

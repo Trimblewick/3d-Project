@@ -15,7 +15,7 @@ cbuffer camera : register(b0)
 
 cbuffer bezier : register(b1)
 {
-	float4 bezierVertices[16];
+	float4 bezierVertices[16]; //bezierVertices[16].w = nr of patches in x (same as z)
 };
 
 float4 BezierCurve(float4 p0, float4 p1, float4 p2, float4 p3, float u)

@@ -29,14 +29,14 @@ private:
 	static const unsigned int		m_iBackBufferCount = 3;
 	double							m_dDeltaTime;
 	float							m_pClearColor[4];
-	int								m_nrOfVertices;
-	int								m_nrOfPatches;
+	int								m_nrOfPatchesWidthX;
+	int								m_nrOfPatchesWidthZ;
 
 	D3DFactory*						m_pD3DFactory;
 	GPUHighway*						m_pGraphicsHighway;
 	GPUHighway*						m_pCopyHighway;
 	Camera*							m_pCamera;
-	BezierClass*					m_pBezierClass;
+	BezierClass*					m_pBezierClass[2];
 	Plane*							m_pPlane;
 
 	IDXGISwapChain3*				m_pSwapChain;
