@@ -484,7 +484,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 
 	D3D12_VERTEX_BUFFER_VIEW vbView;
 	vbView.BufferLocation = pVBuffer->GetGPUVirtualAddress();
-	vbView.StrideInBytes = sizeof(float4);
+	vbView.StrideInBytes = sizeof(float2);
 	vbView.SizeInBytes = vBufferSize;
 	
 
