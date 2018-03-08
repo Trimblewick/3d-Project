@@ -651,7 +651,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	ibView.Format = DXGI_FORMAT_R32_UINT;
 
 	//-----------------------------------
-
+	
 	return new Plane(tiles, pVBuffer, vbView, pIBuffer, ibView);
 
 }
