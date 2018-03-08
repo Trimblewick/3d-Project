@@ -60,6 +60,34 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pClearColor[2] = 0.3f;
 	m_pClearColor[3] = 1.0f;
 	
+	m_pDHDSV = m_pD3DFactory->CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false);
+
+	D3D12_CLEAR_VALUE clearValueDSV = {};
+	clearValueDSV.DepthStencil.Depth = 1.0f;
+	clearValueDSV.DepthStencil.Stencil = 0;
+	clearValueDSV.Format = DXGI_FORMAT_D32_FLOAT;
+
+	D3D12_RESOURCE_DESC resourceDescDSV;
+	resourceDescDSV.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resourceDescDSV.Alignment = 0;
+	resourceDescDSV.Width = pWindow->GetWidth();
+	resourceDescDSV.Height = pWindow->GetHeight();
+	resourceDescDSV.DepthOrArraySize = 1;
+	resourceDescDSV.MipLevels = 1;
+	resourceDescDSV.Format = DXGI_FORMAT_D32_FLOAT;
+	resourceDescDSV.SampleDesc.Count = 1;
+	resourceDescDSV.SampleDesc.Quality = 0;
+	resourceDescDSV.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	resourceDescDSV.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+	m_pDSV = m_pD3DFactory->CreateCommitedResource(D3D12_HEAP_TYPE_DEFAULT, &resourceDescDSV, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValueDSV);
+	
+	D3D12_DEPTH_STENCIL_VIEW_DESC descDSV = {};
+	descDSV.Format = DXGI_FORMAT_D32_FLOAT;
+	descDSV.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	descDSV.Flags = D3D12_DSV_FLAG_NONE;
+
+	m_pD3DFactory->GetDevice()->CreateDepthStencilView(m_pDSV, &descDSV, m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
 	
 	//set up default blend
 	D3D12_RENDER_TARGET_BLEND_DESC descBlendStateRTV = {};
@@ -156,13 +184,6 @@ bool GameClass::Initialize(Window* pWindow)
 
 	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
 
-	D3D12_HEAP_PROPERTIES heapPropUpload;
-	heapPropUpload.Type = D3D12_HEAP_TYPE_UPLOAD;
-	heapPropUpload.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapPropUpload.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	heapPropUpload.VisibleNodeMask = 1;
-	heapPropUpload.CreationNodeMask = 1;
-
 	D3D12_RESOURCE_DESC descHeap;
 	descHeap.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	descHeap.Alignment = 0;
@@ -176,8 +197,8 @@ bool GameClass::Initialize(Window* pWindow)
 	descHeap.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	descHeap.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-	ID3D12Resource* pUploadHeapVertexBuffer = m_pD3DFactory->CreateCommitedResource(&heapPropUpload, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
-	ID3D12Resource* pUploadHeapIndexBuffer = m_pD3DFactory->CreateCommitedResource(&heapPropUpload, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
+	ID3D12Resource* pUploadHeapVertexBuffer = m_pD3DFactory->CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
+	ID3D12Resource* pUploadHeapIndexBuffer = m_pD3DFactory->CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 	ID3D12GraphicsCommandList* pCL = m_pCopyHighway->GetFreshCL();
 	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16, pUploadHeapVertexBuffer, pUploadHeapIndexBuffer);
@@ -224,8 +245,9 @@ void GameClass::CleanUp()
 		delete m_pCamera;
 		m_pCamera = nullptr;
 	}
-	SAFE_RELEASE(m_pSwapChain);
 	
+	SAFE_RELEASE(m_pDSV);
+	SAFE_RELEASE(m_pDHDSV);
 	for (int i = 0; i < m_iBackBufferCount; ++i)
 	{
 		SAFE_RELEASE(m_ppRTV[i]);
@@ -233,7 +255,7 @@ void GameClass::CleanUp()
 	SAFE_RELEASE(m_pDHRTV);
 	SAFE_RELEASE(m_pPSO);
 	SAFE_RELEASE(m_pRS);
-
+	SAFE_RELEASE(m_pSwapChain);
 
 
 
@@ -315,7 +337,8 @@ void GameClass::Frame()
 
 	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
 	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
-	pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
+	pGraphicsCL->ClearDepthStencilView(m_pDHDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAGS::D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
 
 	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
 	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);

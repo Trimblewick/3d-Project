@@ -26,7 +26,7 @@ public:
 	IDXGISwapChain3*						CreateSwapChain(DXGI_SWAP_CHAIN_DESC* pDesc, ID3D12CommandQueue* pCQ);
 	ID3D12DescriptorHeap*					CreateDH(int numDescriptors, D3D12_DESCRIPTOR_HEAP_TYPE type, bool bShaderVisible);
 	ID3DBlob*								CompileShader(LPCWSTR filePath, LPCSTR shadermodel);
-	ID3D12Resource*							CreateCommitedResource(D3D12_HEAP_PROPERTIES* pHeapProperties, D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES initState);
+	ID3D12Resource*							CreateCommitedResource(D3D12_HEAP_TYPE type, D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES initState, D3D12_CLEAR_VALUE* clearValue = nullptr);
 	GPUHighway*								CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCLs);
 	Camera*									CreateCamera(unsigned int iBufferCount, long iWidthWindow, long iHeightWindow);
 	BezierClass*							CreateBezier(int nrOfVertices);

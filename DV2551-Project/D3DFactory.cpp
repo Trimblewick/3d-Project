@@ -163,16 +163,23 @@ ID3DBlob * D3DFactory::CompileShader(LPCWSTR filePath, LPCSTR shadermodel)
 	return shaderBlob;
 }
 
-ID3D12Resource * D3DFactory::CreateCommitedResource(D3D12_HEAP_PROPERTIES * pHeapProperties, D3D12_RESOURCE_DESC * pResourceDesc, D3D12_RESOURCE_STATES initState)
+ID3D12Resource * D3DFactory::CreateCommitedResource(D3D12_HEAP_TYPE type, D3D12_RESOURCE_DESC * pResourceDesc, D3D12_RESOURCE_STATES initState, D3D12_CLEAR_VALUE* clearValue)
 {
 	ID3D12Resource* pHeap;
 
+	D3D12_HEAP_PROPERTIES heapProperties;
+	heapProperties.Type = type;
+	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	heapProperties.VisibleNodeMask = 1;
+	heapProperties.CreationNodeMask = 1;
+
 	DxAssert(m_pDevice->CreateCommittedResource(
-		pHeapProperties,
+		&heapProperties,
 		D3D12_HEAP_FLAG_NONE,
 		pResourceDesc,
 		initState,
-		nullptr,
+		clearValue,
 		IID_PPV_ARGS(&pHeap)));
 
 	return pHeap;
@@ -234,13 +241,6 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 	rectScissor.bottom = iHeightWindow;
 	rectScissor.right = iWidthWindow;
 
-	D3D12_HEAP_PROPERTIES heapProp = {};
-	heapProp.Type = D3D12_HEAP_TYPE_UPLOAD;
-	heapProp.CreationNodeMask = 1;
-	heapProp.VisibleNodeMask = 1;
-	heapProp.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProp.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-
 	D3D12_RESOURCE_DESC descResource = {};
 	descResource.Alignment = 0;
 	descResource.DepthOrArraySize = 1;
@@ -260,16 +260,15 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 
 	unsigned char** ppBufferAddressPointer = new unsigned char*;
 	ID3D12Resource** ppBufferMatrix = new ID3D12Resource*[iBufferCount];
-	ID3D12Resource*	pUploadHeap = CreateCommitedResource(&heapProp, &descResource, D3D12_RESOURCE_STATE_GENERIC_READ);
+	ID3D12Resource*	pUploadHeap = CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &descResource, D3D12_RESOURCE_STATE_GENERIC_READ);
 
-	heapProp.Type = D3D12_HEAP_TYPE_DEFAULT;//<-- reuse heapprop for matrixbuffer
 	D3D12_CONSTANT_BUFFER_VIEW_DESC descCB = {};
 	descCB.SizeInBytes = sizeof(data);
 
 	
 	for (unsigned int i = 0; i < iBufferCount; ++i)
 	{
-		ppBufferMatrix[i] = CreateCommitedResource(&heapProp, &descResource, D3D12_RESOURCE_STATE_COPY_DEST);
+		ppBufferMatrix[i] = CreateCommitedResource(D3D12_HEAP_TYPE_DEFAULT, &descResource, D3D12_RESOURCE_STATE_COPY_DEST);
 
 		descCB.BufferLocation = ppBufferMatrix[i]->GetGPUVirtualAddress();
 
@@ -313,15 +312,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-	//Set heap properties
-	D3D12_HEAP_PROPERTIES heapDesc;
-	heapDesc.Type = D3D12_HEAP_TYPE_UPLOAD;
-	heapDesc.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapDesc.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	heapDesc.CreationNodeMask = 1;
-	heapDesc.VisibleNodeMask = 1;
-
-	pUploadCB = CreateCommitedResource(&heapDesc, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
+	pUploadCB = CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
 	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
@@ -358,13 +349,6 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	int vBufferSize = sizeof(float2) * pVerts.size();
 	
 	//Vertex Buffer ---------------------------------
-	D3D12_HEAP_PROPERTIES heapProperties;
-	heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-	heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	heapProperties.VisibleNodeMask = 1;
-	heapProperties.CreationNodeMask = 1;
-
 	D3D12_RESOURCE_DESC bufferDesc;
 	bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	bufferDesc.Alignment = 0;
@@ -378,7 +362,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-	ID3D12Resource* pVBuffer = CreateCommitedResource(&heapProperties, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST);
+	ID3D12Resource* pVBuffer = CreateCommitedResource(D3D12_HEAP_TYPE_DEFAULT, &bufferDesc, D3D12_RESOURCE_STATE_COPY_DEST);
 	pVBuffer->SetName(L"Vertex Buffer Heap");
 
 	D3D12_SUBRESOURCE_DATA vertexData = {};
@@ -429,7 +413,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	indexBufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	indexBufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-	ID3D12Resource* pIBuffer = CreateCommitedResource(&heapProperties, &indexBufferDesc, D3D12_RESOURCE_STATE_COPY_DEST);
+	ID3D12Resource* pIBuffer = CreateCommitedResource(D3D12_HEAP_TYPE_DEFAULT, &indexBufferDesc, D3D12_RESOURCE_STATE_COPY_DEST);
 	pIBuffer->SetName(L"IBuffer Resource Heap");
 
 	D3D12_SUBRESOURCE_DATA indexData = {};

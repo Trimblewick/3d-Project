@@ -45,11 +45,10 @@ private:
 	ID3D12DescriptorHeap*			m_pDHRTV;
 	int								m_iIncrementSizeRTV;
 
+	ID3D12Resource*					m_pDSV;
+	ID3D12DescriptorHeap*			m_pDHDSV;
+
 	ID3D12RootSignature*			m_pRS;
 	ID3D12PipelineState*			m_pPSO;
-
-	D3D12_VIEWPORT					m_viewport;
-	D3D12_RECT						m_rectScissor;
-
 };
  
