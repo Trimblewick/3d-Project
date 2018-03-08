@@ -193,7 +193,7 @@ void D3DFactory::UpdateSubresources(ID3D12GraphicsCommandList * pCopyCL, ID3D12R
 	memcpy(*ppData, reinterpret_cast<const void*>(pBufferData->pData), pBufferData->RowPitch);
 	pUploadHeap->Unmap(0, NULL);
 
-	pCopyCL->CopyResource(pBufferHeap, pUploadHeap);
+	pCopyCL->CopyBufferRegion(pBufferHeap, 0, pUploadHeap, 0, pBufferHeap->GetDesc().Width);//CopyResource(pBufferHeap, pUploadHeap);
 	delete[] ppData;
 	//pCmdList->CopyBufferRegion(pVBuffer, 0, pVBUpload, pLayouts[0].Offset, pLayouts[0].Footprint.Width);
 }

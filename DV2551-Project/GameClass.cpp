@@ -163,9 +163,25 @@ bool GameClass::Initialize(Window* pWindow)
 	inputLayoutDesc.NumElements = sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
 	inputLayoutDesc.pInputElementDescs = inputLayout;
 
+	D3D12_DEPTH_STENCILOP_DESC descDepthStencilOp;
+	descDepthStencilOp.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	descDepthStencilOp.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	descDepthStencilOp.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	descDepthStencilOp.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+
+	D3D12_DEPTH_STENCIL_DESC descDepthStencil = {};
+	descDepthStencil.DepthEnable = true;
+	descDepthStencil.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	descDepthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	descDepthStencil.StencilEnable = false;
+	descDepthStencil.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+	descDepthStencil.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+	descDepthStencil.BackFace = descDepthStencilOp;
+	descDepthStencil.FrontFace = descDepthStencilOp;
+
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC descPSO = {};
 	descPSO.BlendState = descBlendSate;
-	//descPSO.DepthStencilState
+	descPSO.DepthStencilState = descDepthStencil;
 	descPSO.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	descPSO.NumRenderTargets = 1;
 	descPSO.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
