@@ -30,6 +30,7 @@ public:
 	Camera*									CreateCamera(unsigned int iBufferCount, long iWidthWindow, long iHeightWindow);
 	BezierClass*							CreateBezier(int nrOfVertices);
 	Plane*									CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned int tiles);
+	Plane*									CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned int tiles, int alt);
 
 private:
 	IDXGIFactory4*							m_pDXGIFactory;
