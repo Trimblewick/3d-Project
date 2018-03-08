@@ -351,11 +351,12 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	{
 		for (unsigned int j = 0; j < (uiWidth - 1); ++j)
 		{
-			pIndices.push_back(i * uiWidth + j);
+
 			pIndices.push_back(i * uiWidth + j + uiWidth);
-			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
 			pIndices.push_back(i * uiWidth + j);
 			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
+			pIndices.push_back(i * uiWidth + j + uiWidth + 1);
+			pIndices.push_back(i * uiWidth + j);
 			pIndices.push_back(i * uiWidth + j + 1);
 		}
 	}
@@ -501,7 +502,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 
 	D3D12_VERTEX_BUFFER_VIEW vbView;
 	vbView.BufferLocation = pVBuffer->GetGPUVirtualAddress();
-	vbView.StrideInBytes = sizeof(float4);
+	vbView.StrideInBytes = sizeof(float2);
 	vbView.SizeInBytes = vBufferSize;
 	
 
