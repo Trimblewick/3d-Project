@@ -148,6 +148,7 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pRS = m_pD3DFactory->CreateRS(&descRS);
 
 	ID3DBlob* pVSblob = m_pD3DFactory->CompileShader(L"VertexShader2.hlsl", "vs_5_1");
+	ID3DBlob* pGSblob = m_pD3DFactory->CompileShader(L"GeometryShader.hlsl", "gs_5_1");
 	ID3DBlob* pPSblob = m_pD3DFactory->CompileShader(L"PixelShader.hlsl", "ps_5_1");
 
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] =
@@ -169,6 +170,7 @@ bool GameClass::Initialize(Window* pWindow)
 	descPSO.NumRenderTargets = 1;
 	descPSO.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	descPSO.VS = { pVSblob->GetBufferPointer(), pVSblob->GetBufferSize() };
+	descPSO.GS = { pGSblob->GetBufferPointer(), pGSblob->GetBufferSize() };
 	descPSO.PS = { pPSblob->GetBufferPointer(), pPSblob->GetBufferSize() };
 	descPSO.RasterizerState = descRasterizer;
 	descPSO.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;

@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "D3DFactory.h"
-#include "d3dx12.h"
 #include <wrl.h>
 
 D3DFactory::D3DFactory()
@@ -183,6 +182,20 @@ ID3D12Resource * D3DFactory::CreateCommitedResource(D3D12_HEAP_TYPE type, D3D12_
 		IID_PPV_ARGS(&pHeap)));
 
 	return pHeap;
+}
+
+void D3DFactory::UpdateSubresources(ID3D12GraphicsCommandList * pCopyCL, ID3D12Resource * pBufferHeap, ID3D12Resource * pUploadHeap, D3D12_SUBRESOURCE_DATA * pBufferData)
+{
+	unsigned char** ppData = new unsigned char*;
+	DxAssert(pUploadHeap->Map(0, NULL, reinterpret_cast<void**>(ppData)));
+
+	size_t test = pBufferData->RowPitch;
+	memcpy(*ppData, reinterpret_cast<const void*>(pBufferData->pData), pBufferData->RowPitch);
+	pUploadHeap->Unmap(0, NULL);
+
+	pCopyCL->CopyResource(pBufferHeap, pUploadHeap);
+	delete[] ppData;
+	//pCmdList->CopyBufferRegion(pVBuffer, 0, pVBUpload, pLayouts[0].Offset, pLayouts[0].Footprint.Width);
 }
 
 GPUHighway * D3DFactory::CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCLs)
@@ -370,13 +383,12 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	vertexData.RowPitch = vBufferSize;
 	vertexData.SlicePitch = vBufferSize; //both are supposed to be size in bytes of all triangles...
 
-	UpdateSubresources(pCmdList, pVBuffer, pUploadHeapVertexBuffer, 0, 0, 1, &vertexData);
+	UpdateSubresources(pCmdList, pVBuffer, pUploadHeapVertexBuffer, &vertexData);
 	
 	D3D12_VERTEX_BUFFER_VIEW vbView;
 	vbView.BufferLocation = pVBuffer->GetGPUVirtualAddress();
 	vbView.StrideInBytes = sizeof(float2);
 	vbView.SizeInBytes = vBufferSize;
-	
 
 	//Index buffer-----------------------
 
@@ -421,9 +433,7 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	indexData.RowPitch = iBufferSize; // size of all our index buffer
 	indexData.SlicePitch = iBufferSize; // also the size of our index buffer
 
-
-	UpdateSubresources(pCmdList, pIBuffer, pUploadHeapIndexBuffer, 0, 0, 1, &indexData);
-
+	UpdateSubresources(pCmdList, pIBuffer, pUploadHeapIndexBuffer, &indexData);
 
 	D3D12_INDEX_BUFFER_VIEW ibView;
 	ibView.BufferLocation = pIBuffer->GetGPUVirtualAddress();
@@ -431,6 +441,4 @@ Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned in
 	ibView.Format = DXGI_FORMAT_R32_UINT;
 
 	return new Plane(tiles, pVBuffer, vbView, pIBuffer, ibView);
-
 }
-
