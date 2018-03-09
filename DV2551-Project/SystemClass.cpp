@@ -8,7 +8,7 @@ Input SystemClass::s_input;
 
 bool SystemClass::s_bRunning;
 bool SystemClass::s_bInitialized;
-float SystemClass::s_fDeltaTime;
+double SystemClass::s_fDeltaTime;
 
 
 LRESULT CALLBACK SystemClass::EventHandler(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)

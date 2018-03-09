@@ -15,6 +15,7 @@ public:
 	void SetIndexBufferView(D3D12_INDEX_BUFFER_VIEW indexBufferView);
 
 	void bind(ID3D12GraphicsCommandList* pCL);
+	void draw(ID3D12GraphicsCommandList* pCL);
 
 	std::vector<float2>* GetVertices();
 	std::vector<DWORD>* GetIndices();

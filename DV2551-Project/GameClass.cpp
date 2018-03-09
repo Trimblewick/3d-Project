@@ -17,6 +17,7 @@ GameClass::~GameClass()
 
 bool GameClass::Initialize(Window* pWindow)
 {
+	srand(time(NULL));
 	m_pD3DFactory = new D3DFactory();
 	
 	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, 15);
@@ -122,25 +123,33 @@ bool GameClass::Initialize(Window* pWindow)
 	descRasterizer.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
 	//Constant buffer RootSig setup
-	D3D12_ROOT_DESCRIPTOR d = {};
+	D3D12_ROOT_DESCRIPTOR cameraDescriptor = {};
 
-	D3D12_ROOT_DESCRIPTOR cbvDescriptor;
-	cbvDescriptor.RegisterSpace = 0;
-	cbvDescriptor.ShaderRegister = 1;
+	D3D12_ROOT_DESCRIPTOR bezierDescriptor;
+	bezierDescriptor.RegisterSpace = 0;
+	bezierDescriptor.ShaderRegister = 1;
+
+	D3D12_ROOT_CONSTANTS bezierOffsetRootConstant = {};
+	bezierOffsetRootConstant.Num32BitValues = 2;
+	bezierOffsetRootConstant.ShaderRegister = 2;
+	bezierOffsetRootConstant.RegisterSpace = 0;
 
 
-	D3D12_ROOT_PARAMETER rootParameters[2] = {};
-	rootParameters[0].Descriptor = d;
+	D3D12_ROOT_PARAMETER rootParameters[3] = {};
+	rootParameters[0].Descriptor = cameraDescriptor;
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-	rootParameters[1].Descriptor = cbvDescriptor;
+	rootParameters[1].Descriptor = bezierDescriptor;
 
+	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParameters[2].Constants = bezierOffsetRootConstant;
 
 	D3D12_ROOT_SIGNATURE_DESC descRS = {};
-	descRS.NumParameters = 2;
+	descRS.NumParameters = _countof(rootParameters);
 	descRS.pParameters = rootParameters;
 	descRS.Flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	
@@ -225,13 +234,12 @@ bool GameClass::Initialize(Window* pWindow)
 	SAFE_RELEASE(pUploadHeapVertexBuffer);//Only for init...
 	SAFE_RELEASE(pUploadHeapIndexBuffer);
 
-
-	//Create Bezier
-	int planeWidth = m_pPlane->GetWidth();
-	m_nrOfVertices = 16;
-	m_pBezierClass = m_pD3DFactory->CreateBezier(m_nrOfVertices);
-	m_pBezierClass->CalculateBezierPoints(planeWidth/*, 2*/);
-	m_nrOfPatches = 1; //must be 1 or factor of 2
+	m_iNrOfPlanes = 10;
+	m_ppBezierClass = new BezierClass*;
+	for (int i = 0; i < m_iNrOfPlanes; ++i)
+	{
+		m_ppBezierClass[i] = m_pD3DFactory->CreateBezier(m_pPlane->GetWidth());
+	}
 
 	return true;
 }
@@ -276,17 +284,8 @@ void GameClass::CleanUp()
 	SAFE_RELEASE(m_pSwapChain);
 
 
-
-
-	if (m_pBezierClass)
-	{
-		delete m_pBezierClass;
-		m_pBezierClass = nullptr;
-	}
-
 }
 
-int test = 0;
 void GameClass::Update(Input * pInput, double dDeltaTime)
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
@@ -295,25 +294,9 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	
 	m_dDeltaTime = dDeltaTime;
 
-	//for (int x = 0; x < m_nrOfPatches; ++x)
-	//{
-	//	for (int y = 0; m_nrOfPatches; ++y)
-	//	{
-	//		
-	//		/*freshCL;
-	//		//update bPoints(x, y)
-	//		queueCL
-	//		executeCL*/
-	//	}
-	//	
-	//}
-
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 
 	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
-	m_pBezierClass->UpdateBezierPoints(); //Calculates Bézier vertices
-	//m_pBezierClass->BindBezier(pCopyCL, iBufferIndex); ???
-
 	
 	m_pCopyHighway->QueueCL(pCopyCL);
 	int iCameraFence = m_pCopyHighway->ExecuteCQ();
@@ -360,11 +343,26 @@ void GameClass::Frame()
 
 	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
 	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
+
 	m_pPlane->bind(pGraphicsCL);
-
-
-	m_pBezierClass->BindBezier(pGraphicsCL, iBufferIndex);
 	
+	m_ppBezierClass[0]->UpdateBezierPoints(m_dDeltaTime);
+	m_ppBezierClass[0]->BindBezier(pGraphicsCL, iBufferIndex);
+	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 0);
+	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
+	m_pPlane->draw(pGraphicsCL);
+
+
+	for (int i = 1; i < 3; ++i)
+	{
+		pGraphicsCL->SetGraphicsRoot32BitConstant(2, m_pPlane->GetWidth() * i, 0);
+		pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
+		
+		//m_ppBezierClass[0]->UpdateBezierPoints(m_dDeltaTime);
+		m_pPlane->draw(pGraphicsCL);
+	}
+
+
 	m_pGraphicsHighway->QueueCL(pGraphicsCL);
 
 	//update<-cpu

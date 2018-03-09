@@ -42,6 +42,10 @@ void Plane::bind(ID3D12GraphicsCommandList* pCL)
 	pCL->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	pCL->IASetVertexBuffers(0, 1, &m_vertexBufferView);
 	pCL->IASetIndexBuffer(&m_indexBufferView);
+}
+
+void Plane::draw(ID3D12GraphicsCommandList * pCL)
+{
 	pCL->DrawIndexedInstanced(m_uiNumIndices, 1, 0, 0, 0);
 }
 

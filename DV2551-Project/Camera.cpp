@@ -138,6 +138,14 @@ void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex
 	pCopyCL->CopyResource(m_ppBufferMatrixHeap[iBufferIndex], m_pUploadHeap);
 }
 
+void Camera::TransitionToConstant(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
+{
+}
+
+void Camera::TransitionToCopyDest(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
+{
+}
+
 
 void Camera::BindCamera(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
 {

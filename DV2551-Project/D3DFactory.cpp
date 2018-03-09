@@ -295,20 +295,33 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 	return new Camera(data, viewport, rectScissor, pUploadHeap, ppBufferAddressPointer, ppBufferMatrix , iBufferCount, pDH);
 }
 
-BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
+BezierClass* D3DFactory::CreateBezier(int iWidthPlane)
 {
 	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	ID3D12Resource* pUploadCB = nullptr;
-	std::vector<float4>	pBezierPoints;
+	int iNrOfPoints = 16;
+	float4* pBezierPoints = new float4[iNrOfPoints];
+	int iSize = sizeof(float4) * iNrOfPoints;
+	int iWidth = iWidthPlane / 3;
+	
+	double* pPointsOffset = new double[iNrOfPoints];
+	for (int i = 0; i < iNrOfPoints; ++i)
+		pPointsOffset[i] = rand();
 
-	for (int i = 0; i < nrOfVertices; ++i) //Change nrOfVertices to a factor of nrOfVertices which we decide, change below in function too
+	int index = 0;
+	for (int i = 0; i < 4; ++i)
 	{
-		float4 test;
-		test.x = 0.0f;
-		test.y = 0.0f;
-		test.z = 1.0f;
-		test.w = 1.0f;
-		pBezierPoints.push_back(test);
+		for (int j = 0; j < 4; ++j)
+		{
+			float4 temp;
+			temp.x = iWidth * j;
+			temp.y = sin(pPointsOffset[index]);
+			temp.z = iWidth * i;
+			temp.w = 1.0f;
+
+			pBezierPoints[index] = temp;
+			index++;
+		}
 	}
 
 	//Set resource desc
@@ -329,7 +342,7 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
 	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
-	m_cbDesc.SizeInBytes = /*sizeof(m_pBezierVertices) * sizeof(float4);*/(nrOfVertices * sizeof(float4) + 255) & ~255; //Forces SizeInBytes to be multiple of 256, which device requires for CreateCBV?
+	m_cbDesc.SizeInBytes = (iNrOfPoints * sizeof(float4) + 255) & ~255; //Forces SizeInBytes to be multiple of 256, which device requires for CreateCBV?
 
 	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
 
@@ -337,10 +350,9 @@ BezierClass* D3DFactory::CreateBezier(int nrOfVertices)
 
 	uint8_t* address;
 	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address));
-	memcpy(address, pBezierPoints.data(), nrOfVertices * sizeof(float4));
+	memcpy(address, pBezierPoints, iSize);
 
-	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, nrOfVertices);
-	pBezierPoints.clear();
+	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, iNrOfPoints, pBezierPoints, pPointsOffset);
 
 	return pB;
 }

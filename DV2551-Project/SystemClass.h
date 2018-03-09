@@ -42,5 +42,5 @@ private:
 
 	static bool s_bRunning;
 	static bool s_bInitialized;
-	static float s_fDeltaTime;
+	static double s_fDeltaTime;
 };

@@ -1,3 +1,4 @@
+
 cbuffer camera : register(b0)
 {
 	float4x4 vpMat;
@@ -18,6 +19,11 @@ cbuffer bezier : register(b1)
 	float4 bezierVertices[16];
 };
 
+cbuffer bezierOffset : register(b2)
+{
+	int2 offset;
+};
+
 float4 BezierCurve(float4 p0, float4 p1, float4 p2, float4 p3, float u)
 {
 	float l0 = (1 - u) * (1 - u) * (1 - u);
@@ -36,6 +42,8 @@ float4 main(float2 input : UV) : SV_POSITION
 		points[i] = BezierCurve(bezierVertices[i], bezierVertices[i + 4], bezierVertices[i + 8], bezierVertices[i + 12], input.x);
 	}
 	float4 vert = BezierCurve(points[0], points[1], points[2], points[3], input.y);
+	vert.x += offset.x;
+	vert.z += offset.y;
 
 	//return mul(float4(input.x, 0, input.y, 1), vpMat);
 	return mul(vert, vpMat);

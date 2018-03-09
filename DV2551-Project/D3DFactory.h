@@ -30,7 +30,7 @@ public:
 	ID3D12Resource*							CreateCommitedResource(D3D12_HEAP_TYPE type, D3D12_RESOURCE_DESC* pResourceDesc, D3D12_RESOURCE_STATES initState, D3D12_CLEAR_VALUE* clearValue = nullptr);
 	GPUHighway*								CreateGPUHighway(D3D12_COMMAND_LIST_TYPE type, unsigned int iNumberOfCLs);
 	Camera*									CreateCamera(unsigned int iBufferCount, long iWidthWindow, long iHeightWindow);
-	BezierClass*							CreateBezier(int nrOfVertices);
+	BezierClass*							CreateBezier(int iWidthPlane);
 	Plane*									CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned int tiles, ID3D12Resource* pUploadHeapVertexBuffer, ID3D12Resource* pUploadHeapIndexBuffer);
 
 private:
