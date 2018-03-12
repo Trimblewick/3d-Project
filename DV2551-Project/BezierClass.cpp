@@ -1,3 +1,14 @@
+//Get ticks from queue, GetClockCalibration()
+//Get queue frequency, GPU and CPU
+
+//Convert queue time to seconds/ms something measurable (clockcalib / frequency)
+
+//Sync CPU time and offset one GPU time accordingaly, EG: Q0(60,55) Q1(90,50) becomes Q0(5,0) Q1(40,0)
+//Calculate GPU offset 40 - 5 = 35
+
+//Move measurements to start at 0 for Q0 ??
+//Move measurements to start at 35 for Q1 ??
+
 #include "stdafx.h"
 #include "BezierClass.h"
 #include <time.h>
