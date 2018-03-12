@@ -235,7 +235,7 @@ bool GameClass::Initialize(Window* pWindow)
 	SAFE_RELEASE(pUploadHeapIndexBuffer);
 
 	m_iNrOfPlanes = 10;
-	m_ppBezierClass = new BezierClass*;
+	m_ppBezierClass = new BezierClass*[m_iNrOfPlanes];
 	for (int i = 0; i < m_iNrOfPlanes; ++i)
 	{
 		m_ppBezierClass[i] = m_pD3DFactory->CreateBezier(m_pPlane->GetWidth());
@@ -289,7 +289,6 @@ void GameClass::CleanUp()
 void GameClass::Update(Input * pInput, double dDeltaTime)
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	
 	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
 	
 	m_dDeltaTime = dDeltaTime;
@@ -319,11 +318,11 @@ void GameClass::TransitionBackBufferIntoRenderTargetState()
 	transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 	transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-	D3D12_RESOURCE_BARRIER barrierTransition = {};
-	barrierTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrierTransition.Transition = transition;
+	D3D12_RESOURCE_BARRIER barrier = {};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Transition = transition;
 
-	pCL->ResourceBarrier(1, &barrierTransition);
+	pCL->ResourceBarrier(1, &barrier);
 	
 	m_pGraphicsHighway->QueueCL(pCL);
 }
@@ -335,15 +334,13 @@ void GameClass::Frame()
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
-
 	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
 	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
 	pGraphicsCL->ClearDepthStencilView(m_pDHDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAGS::D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	
 	pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
-
 	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
 	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
-
 	m_pPlane->bind(pGraphicsCL);
 	
 	m_ppBezierClass[0]->UpdateBezierPoints(m_dDeltaTime);
@@ -352,14 +349,31 @@ void GameClass::Frame()
 	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
 	m_pPlane->draw(pGraphicsCL);
 
-
-	for (int i = 1; i < 3; ++i)
+	int iMod = 2;
+	int iWait;// = 15;
+	for (int i = 1; i < 7; ++i)
 	{
-		pGraphicsCL->SetGraphicsRoot32BitConstant(2, m_pPlane->GetWidth() * i, 0);
+		m_pGraphicsHighway->QueueCL(pGraphicsCL);
+		//if (i % 3== 0)
+		{
+			iWait = m_pGraphicsHighway->ExecuteCQ();
+		}
+		pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+		pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
+		pGraphicsCL->SetGraphicsRootSignature(m_pRS);
+		m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
+		m_pPlane->bind(pGraphicsCL);
+
+
+		m_ppBezierClass[i]->UpdateBezierPoints(m_dDeltaTime);
+		m_ppBezierClass[i]->BindBezier(pGraphicsCL, iBufferIndex);
+		pGraphicsCL->SetGraphicsRoot32BitConstant(2, (m_pPlane->GetWidth() - 1) * i, 0);
 		pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
 		
-		//m_ppBezierClass[0]->UpdateBezierPoints(m_dDeltaTime);
 		m_pPlane->draw(pGraphicsCL);
+		//if (i == 6)
+			m_pGraphicsHighway->Wait(iWait);//<<-----oughta be bad?
+
 	}
 
 
@@ -405,7 +419,6 @@ void GameClass::PresentBackBuffer()
 	pCL->ResourceBarrier(1, &barrierTransition);
 
 	m_pGraphicsHighway->QueueCL(pCL);
-
 	m_pRTVWaitIndex[iBufferIndex] = m_pGraphicsHighway->ExecuteCQ();
 
 	m_pSwapChain->Present(0, 0);
