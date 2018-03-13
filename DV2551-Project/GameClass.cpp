@@ -241,6 +241,48 @@ bool GameClass::Initialize(Window* pWindow)
 		m_ppBezierClass[i] = m_pD3DFactory->CreateBezier(m_pPlane->GetWidth());
 	}
 
+
+
+
+
+	LARGE_INTEGER tempFreq;
+	QueryPerformanceCounter(&tempFreq);
+	m_iCPUOffs = tempFreq.QuadPart;
+	QueryPerformanceFrequency(&tempFreq);
+	m_iCPUFreq = tempFreq.QuadPart;
+
+	m_pGraphicsHighway->GetCQ()->GetClockCalibration(&m_iGPUOffs1, &m_iCPUOffs1);
+	m_pCopyHighway->GetCQ()->GetClockCalibration(&m_iGPUOffs2, &m_iCPUOffs2);
+	m_pGraphicsHighway->GetCQ()->GetTimestampFrequency(&m_iGPUFreq1);
+	m_pCopyHighway->GetCQ()->GetTimestampFrequency(&m_iGPUFreq2);
+
+
+
+
+	double actualGPUOffset1 = m_iGPUOffs1 / (double)m_iGPUFreq1;
+	double actualGPUOffset2 = m_iGPUOffs2 / (double)m_iGPUFreq2;
+	double diff = actualGPUOffset1 - actualGPUOffset2;
+
+	double actualCPUOffset1;// = (m_iCPUOffs1 - m_iCPUOffs) / (double)m_iCPUFreq;
+	double actualCPUOffset2;// = (m_iCPUOffs2 - m_iCPUOffs) / (double)m_iCPUFreq;
+
+	if (m_iCPUOffs1 < m_iCPUOffs2)
+	{
+		actualCPUOffset1 = (m_iCPUOffs1 - m_iCPUOffs) / (double)m_iCPUFreq;
+		actualCPUOffset2 = diff;//(m_iCPUOffs2 - m_iCPUOffs1 - m_iCPUOffs) / (double)m_iCPUFreq;
+	}
+	else
+	{
+		actualCPUOffset1 = 0.0;//(m_iCPUOffs1 - m_iCPUOffs2 - m_iCPUOffs) / (double)m_iCPUFreq;
+		actualCPUOffset2 = ((m_iCPUOffs2 - m_iCPUOffs) / (double)m_iCPUFreq) + diff;
+	}
+	//unsigned long long actualGPUOffset1 = m_iGPUOffs1
+
+	
+
+
+	int stopper = 0;
+
 	return true;
 }
 
@@ -349,21 +391,23 @@ void GameClass::Frame()
 	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
 	m_pPlane->draw(pGraphicsCL);
 
-	int iMod = 2;
-	int iWait;// = 15;
-	for (int i = 1; i < 7; ++i)
+	int iWait = -1;
+
+	for (int i = 1; i < 3; ++i)
 	{
 		m_pGraphicsHighway->QueueCL(pGraphicsCL);
-		//if (i % 3== 0)
-		{
-			iWait = m_pGraphicsHighway->ExecuteCQ();
-		}
+		//if (i % iMod == 0)
+		
+		m_pGraphicsHighway->Wait(iWait);
+		iWait = m_pGraphicsHighway->ExecuteCQ();
+		
+		
 		pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
 		pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
 		pGraphicsCL->SetGraphicsRootSignature(m_pRS);
 		m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
 		m_pPlane->bind(pGraphicsCL);
-
+		
 
 		m_ppBezierClass[i]->UpdateBezierPoints(m_dDeltaTime);
 		m_ppBezierClass[i]->BindBezier(pGraphicsCL, iBufferIndex);
@@ -371,11 +415,9 @@ void GameClass::Frame()
 		pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
 		
 		m_pPlane->draw(pGraphicsCL);
-		//if (i == 6)
-			m_pGraphicsHighway->Wait(iWait);//<<-----oughta be bad?
-
+		
 	}
-
+	m_pGraphicsHighway->Wait(iWait);
 
 	m_pGraphicsHighway->QueueCL(pGraphicsCL);
 

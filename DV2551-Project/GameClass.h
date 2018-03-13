@@ -51,5 +51,14 @@ private:
 
 	ID3D12RootSignature*			m_pRS;
 	ID3D12PipelineState*			m_pPSO;
+
+	unsigned long long				m_iCPUOffs;
+	unsigned long long				m_iCPUFreq;
+	unsigned long long				m_iGPUFreq1;
+	unsigned long long				m_iGPUOffs1;
+	unsigned long long				m_iCPUOffs1;
+	unsigned long long				m_iGPUFreq2;
+	unsigned long long				m_iGPUOffs2;
+	unsigned long long				m_iCPUOffs2;
 };
  

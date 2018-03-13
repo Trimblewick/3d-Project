@@ -86,7 +86,6 @@ void SystemClass::Run()
 	auto prevTime = std::chrono::steady_clock::now();
 	auto currentTime = std::chrono::steady_clock::now();
 
-
 	while (s_bRunning)
 	{
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))

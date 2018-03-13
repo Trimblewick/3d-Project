@@ -125,6 +125,8 @@ int GPUHighway::ExecuteCQ()
 
 void GPUHighway::Wait(int index)
 {
+	if (index < 0 || index >= m_iNumberOfCLs)
+		return;
 	if (!m_pFenceLocked[index])
 		return;
 
