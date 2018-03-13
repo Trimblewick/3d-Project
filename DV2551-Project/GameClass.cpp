@@ -54,7 +54,7 @@ bool GameClass::Initialize(Window* pWindow)
 		DxAssert(m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_ppRTV[i])));
 		m_pD3DFactory->GetDevice()->CreateRenderTargetView(m_ppRTV[i], nullptr, handleDH);
 		handleDH.ptr += m_iIncrementSizeRTV;
-		m_pRTVWaitIndex[i] = 0;
+		m_pRTVWaitIndex[i] = -1;
 	}
 	m_pClearColor[0] = 0.1f;
 	m_pClearColor[1] = 0.5f;
@@ -332,7 +332,7 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
-	
+
 	m_dDeltaTime = dDeltaTime;
 
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
@@ -346,7 +346,7 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	m_pCopyHighway->Wait(iCameraFence);
 
 	Frame();
-	PresentBackBuffer();
+	//PresentBackBuffer();
 }
 
 void GameClass::TransitionBackBufferIntoRenderTargetState()
@@ -377,76 +377,63 @@ void GameClass::Frame()
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
 	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
 	pGraphicsCL->ClearDepthStencilView(m_pDHDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAGS::D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	
+
 	pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
 	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
 	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
 	m_pPlane->bind(pGraphicsCL);
 	
-	m_ppBezierClass[0]->UpdateBezierPoints(m_dDeltaTime);
+	m_ppBezierClass[0]->UpdateBezierPoints(pCopyCL, m_dDeltaTime);
+
 	m_ppBezierClass[0]->BindBezier(pGraphicsCL, iBufferIndex);
 	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 0);
 	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
 	m_pPlane->draw(pGraphicsCL);
+	m_ppBezierClass[0]->UnbindBezier(pGraphicsCL, iBufferIndex);
 
-	int iWait = -1;
+	int iWaitGraphics = -1;
+	int iWaitCopy = -1;
 
 	for (int i = 1; i < 3; ++i)
 	{
-		m_pGraphicsHighway->QueueCL(pGraphicsCL);
-		//if (i % iMod == 0)
+		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime);
+		m_pCopyHighway->QueueCL(pCopyCL);
+		m_pCopyHighway->Wait(iWaitCopy);
+		iWaitCopy = m_pCopyHighway->ExecuteCQ();
+		pCopyCL = m_pCopyHighway->GetFreshCL();
 		
-		m_pGraphicsHighway->Wait(iWait);
-		iWait = m_pGraphicsHighway->ExecuteCQ();
-		
-		
-		pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+
 		pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
 		pGraphicsCL->SetGraphicsRootSignature(m_pRS);
 		m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
 		m_pPlane->bind(pGraphicsCL);
 		
-
-		m_ppBezierClass[i]->UpdateBezierPoints(m_dDeltaTime);
 		m_ppBezierClass[i]->BindBezier(pGraphicsCL, iBufferIndex);
 		pGraphicsCL->SetGraphicsRoot32BitConstant(2, (m_pPlane->GetWidth() - 1) * i, 0);
 		pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
-		
 		m_pPlane->draw(pGraphicsCL);
+		m_ppBezierClass[i]->UnbindBezier(pGraphicsCL, iBufferIndex);
 		
+		m_pGraphicsHighway->QueueCL(pGraphicsCL);
+		
+		//m_pGHighway->Wait(iWaitCopy);
+		//iWaitGraphics = m_pGraphicsHighway->ExecuteCQ();
+		pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
 	}
-	m_pGraphicsHighway->Wait(iWait);
+	//m_pGraphicsHighway->Wait(iWaitGraphics);
 
-	m_pGraphicsHighway->QueueCL(pGraphicsCL);
-
-	//update<-cpu
-	//copy<-Q->fence1
-
-	//update
-	//copy<-Q->fence2
-
-	//wait fence1
-	//transition<-graphicsQ
-	//draw
-	//transition --
-
-	//update
-	//copy<-Q->fence3
-
-	//wait fence2
-	//transition<-graphicsQ
-	//draw
-	//transition --
+	m_pCopyHighway->Wait(iWaitCopy);
+	PresentBackBuffer(pGraphicsCL);
 }
 
 
-void GameClass::PresentBackBuffer()
+void GameClass::PresentBackBuffer(ID3D12GraphicsCommandList* pCL)
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
-
 	
 	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
 	transition.pResource = m_ppRTV[iBufferIndex];

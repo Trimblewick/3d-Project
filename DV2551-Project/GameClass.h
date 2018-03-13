@@ -10,7 +10,10 @@
 class GameClass
 {
 private:
+	void							TransitionBackBufferIntoRenderTargetState();
 
+	void							Frame();
+	void							PresentBackBuffer(ID3D12GraphicsCommandList* pCL);
 public:
 	GameClass();
 	~GameClass();
@@ -19,9 +22,7 @@ public:
 	void							CleanUp();
 
 	void							Update(Input* input, double dDeltaTime);
-	void							TransitionBackBufferIntoRenderTargetState();
-	void							PresentBackBuffer();
-	void							Frame();
+	
 
 	
 
@@ -60,5 +61,6 @@ private:
 	unsigned long long				m_iGPUFreq2;
 	unsigned long long				m_iGPUOffs2;
 	unsigned long long				m_iCPUOffs2;
+	int asdf = 0;
 };
  

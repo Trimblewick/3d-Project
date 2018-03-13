@@ -21,7 +21,7 @@ GPUHighway::GPUHighway(D3D12_COMMAND_LIST_TYPE type, ID3D12CommandQueue* pCQ, ID
 	for (unsigned int i = 0; i < iNumberOfCLs; ++i)
 	{
 		m_pCLLock[i] = i;
-		m_pFenceValues[i] = 5;
+		m_pFenceValues[i] = 0;
 		m_pFenceLocked[i] = false;
 	}
 
@@ -55,27 +55,32 @@ ID3D12CommandQueue* GPUHighway::GetCQ()
 	return m_pCQ;
 }
 
-void GPUHighway::QueueCL(ID3D12GraphicsCommandList* pCL)
+void GPUHighway::QueueCL(ID3D12GraphicsCommandList*& pCL)
 {
 	int iLock = -1;
 	
-	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)//error handling
 	{
 		if (m_ppCLs[i] == pCL)
 		{
-			pCL->Close();
 			iLock = i;
 			m_pCLLock[i] = -1;
 		}
 	}
-	assert(iLock > -1);//cant be queued in this highway
+	if (iLock == -1)//cant be queued in this highway
+	{
+		OutputDebugString(L"Address to commandlist does not belong in this highway\n");
+		return;
+	}
 
-	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)
+	for (unsigned int i = 0; i < m_iNumberOfCLs; ++i)//find free fence
 	{
 		if (!m_pFenceLocked[i])
 		{
+			pCL->Close();
 			m_ppCLQ[i].push_back(pCL);
 			m_pIndexCLQ[i].push_back(iLock);
+			pCL = nullptr;
 			break;
 		}
 	}

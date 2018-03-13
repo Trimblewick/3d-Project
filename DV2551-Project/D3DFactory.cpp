@@ -299,6 +299,7 @@ BezierClass* D3DFactory::CreateBezier(int iWidthPlane)
 {
 	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
 	ID3D12Resource* pUploadCB = nullptr;
+	ID3D12Resource* pCB = nullptr;
 	int iNrOfPoints = 16;
 	float4* pBezierPoints = new float4[iNrOfPoints];
 	int iSize = sizeof(float4) * iNrOfPoints;
@@ -328,7 +329,7 @@ BezierClass* D3DFactory::CreateBezier(int iWidthPlane)
 	D3D12_RESOURCE_DESC resourceDesc;
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
 	resourceDesc.Alignment = 0;
-	resourceDesc.Width = 65536;//(nrOfVertices * sizeof(float4) + 255) & ~255;//nrOfVertices; //???
+	resourceDesc.Width = iSize;
 	resourceDesc.Height = 1;
 	resourceDesc.DepthOrArraySize = 1;
 	resourceDesc.MipLevels = 1;
@@ -339,10 +340,11 @@ BezierClass* D3DFactory::CreateBezier(int iWidthPlane)
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
 	pUploadCB = CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
+	pCB = CreateCommitedResource(D3D12_HEAP_TYPE_DEFAULT, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST);
 
 	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
 	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
-	m_cbDesc.SizeInBytes = (iNrOfPoints * sizeof(float4) + 255) & ~255; //Forces SizeInBytes to be multiple of 256, which device requires for CreateCBV?
+	m_cbDesc.SizeInBytes = iSize;//already 256 bytes aligned
 
 	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
 
@@ -352,9 +354,7 @@ BezierClass* D3DFactory::CreateBezier(int iWidthPlane)
 	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address));
 	memcpy(address, pBezierPoints, iSize);
 
-	BezierClass* pB = new BezierClass(pDH, pUploadCB, address, iNrOfPoints, pBezierPoints, pPointsOffset);
-
-	return pB;
+	return new BezierClass(pDH, pUploadCB, pCB, address, iNrOfPoints, pBezierPoints, pPointsOffset);;
 }
 
 Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned int tiles, ID3D12Resource* pUploadHeapVertexBuffer, ID3D12Resource* pUploadHeapIndexBuffer)
