@@ -61,6 +61,6 @@ private:
 	unsigned long long				m_iGPUFreq2;
 	unsigned long long				m_iGPUOffs2;
 	unsigned long long				m_iCPUOffs2;
-	int asdf = 0;
+	
 };
  

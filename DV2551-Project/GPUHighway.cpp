@@ -119,7 +119,7 @@ int GPUHighway::ExecuteCQ()
 	{
 		if (!m_pFenceLocked[i])//find first free fence
 		{
-			m_pCQ->Signal(m_ppFences[i], m_pFenceValues[i]);
+			m_pCQ->Signal(m_ppFences[i], m_pFenceValues[i]);//Maybe signal in Wait() instead?
 			index = i;
 			m_pFenceLocked[i] = true;
 			break;

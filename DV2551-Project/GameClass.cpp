@@ -314,6 +314,12 @@ void GameClass::CleanUp()
 		m_pCamera = nullptr;
 	}
 	
+	for (int i = 0; i < m_iNrOfPlanes; ++i)
+	{
+		delete m_ppBezierClass[i];
+	}
+	delete[] m_ppBezierClass;
+
 	SAFE_RELEASE(m_pDSV);
 	SAFE_RELEASE(m_pDHDSV);
 	for (int i = 0; i < m_iBackBufferCount; ++i)
@@ -377,7 +383,7 @@ void GameClass::Frame()
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
 	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
-	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
+	ID3D12GraphicsCommandList* pCopyCL;// = m_pCopyHighway->GetFreshCL();
 	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
 	pGraphicsCL->ClearDepthStencilView(m_pDHDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAGS::D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 	
@@ -387,30 +393,33 @@ void GameClass::Frame()
 	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
 	m_pPlane->bind(pGraphicsCL);
 	
+	/*
 	m_ppBezierClass[0]->UpdateBezierPoints(pCopyCL, m_dDeltaTime);
 
 	m_ppBezierClass[0]->BindBezier(pGraphicsCL, iBufferIndex);
 	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 0);
 	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
 	m_pPlane->draw(pGraphicsCL);
-	m_ppBezierClass[0]->UnbindBezier(pGraphicsCL, iBufferIndex);
+	m_ppBezierClass[0]->UnbindBezier(pGraphicsCL, iBufferIndex);*/
 
 	int iWaitGraphics = -1;
 	int iWaitCopy = -1;
 
-	for (int i = 1; i < 3; ++i)
+	for (int i = 0; i < 3; ++i)
 	{
+		pCopyCL = m_pCopyHighway->GetFreshCL();
 		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime);
 		m_pCopyHighway->QueueCL(pCopyCL);
-		m_pCopyHighway->Wait(iWaitCopy);
 		iWaitCopy = m_pCopyHighway->ExecuteCQ();
-		pCopyCL = m_pCopyHighway->GetFreshCL();
 		
-
+		
+		
+		//pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+		/*
 		pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
 		pGraphicsCL->SetGraphicsRootSignature(m_pRS);
 		m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
-		m_pPlane->bind(pGraphicsCL);
+		m_pPlane->bind(pGraphicsCL);*/
 		
 		m_ppBezierClass[i]->BindBezier(pGraphicsCL, iBufferIndex);
 		pGraphicsCL->SetGraphicsRoot32BitConstant(2, (m_pPlane->GetWidth() - 1) * i, 0);
@@ -418,15 +427,16 @@ void GameClass::Frame()
 		m_pPlane->draw(pGraphicsCL);
 		m_ppBezierClass[i]->UnbindBezier(pGraphicsCL, iBufferIndex);
 		
-		m_pGraphicsHighway->QueueCL(pGraphicsCL);
+		//m_pGraphicsHighway->QueueCL(pGraphicsCL);
+
+		m_pCopyHighway->Wait(iWaitCopy);
 		
-		//m_pGHighway->Wait(iWaitCopy);
 		//iWaitGraphics = m_pGraphicsHighway->ExecuteCQ();
-		pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+		//m_pGraphicsHighway->Wait(iWaitGraphics);
 	}
 	//m_pGraphicsHighway->Wait(iWaitGraphics);
-
-	m_pCopyHighway->Wait(iWaitCopy);
+	//iWaitCopy = m_pCopyHighway->ExecuteCQ();
+	//m_pCopyHighway->Wait(iWaitCopy);
 	PresentBackBuffer(pGraphicsCL);
 }
 

@@ -18,7 +18,7 @@ public:
 	ID3D12GraphicsCommandList*				GetFreshCL(ID3D12PipelineState* pPSO = nullptr);
 	
 	int										ExecuteCQ();//Execute all queued commandlists. Returns the index of the fence used.
-	void									Wait(int index);//Wait for a particular fence using a index. Returns -1 if no free fences was found.
+	void									Wait(int index);//Wait for a particular fence using a index.
 	void									WaitForAllFences();//Full reset, all fences will be waited for.
 
 private:
