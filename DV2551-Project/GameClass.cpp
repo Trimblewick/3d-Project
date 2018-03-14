@@ -410,8 +410,6 @@ void GameClass::Frame()
 		pCopyCL = m_pCopyHighway->GetFreshCL();
 		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime);
 		m_pCopyHighway->QueueCL(pCopyCL);
-		iWaitCopy = m_pCopyHighway->ExecuteCQ();
-		
 		
 		
 		//pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
@@ -434,6 +432,8 @@ void GameClass::Frame()
 		//iWaitGraphics = m_pGraphicsHighway->ExecuteCQ();
 		//m_pGraphicsHighway->Wait(iWaitGraphics);
 	}
+
+	iWaitCopy = m_pCopyHighway->ExecuteCQ();
 	//m_pGraphicsHighway->Wait(iWaitGraphics);
 	//iWaitCopy = m_pCopyHighway->ExecuteCQ();
 	//m_pCopyHighway->Wait(iWaitCopy);

@@ -21,6 +21,8 @@ public:
 	void									Wait(int index);//Wait for a particular fence using a index.
 	void									WaitForAllFences();//Full reset, all fences will be waited for.
 
+	void									TicksToSeconds();
+
 private:
 	D3D12_COMMAND_LIST_TYPE					m_type;
 	ID3D12CommandQueue*						m_pCQ;
@@ -39,6 +41,15 @@ private:
 	bool*									m_pFenceLocked;
 
 	HANDLE									m_handleFence;
-	
+
+	unsigned long long						m_CPUfrequency;
+	unsigned long long						m_GPUfrequency;
+
+	struct TimingData {
+		unsigned long long GPUCalibration;
+		unsigned long long CPUCalibration;
+		unsigned long long start;
+		unsigned long long end;
+	} p_timingData[2];
 };
 

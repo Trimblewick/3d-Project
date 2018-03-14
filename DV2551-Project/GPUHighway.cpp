@@ -162,4 +162,18 @@ void GPUHighway::WaitForAllFences()
 	}
 }
 
+void GPUHighway::TicksToSeconds()
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		p_timingData[i].CPUCalibration /= m_CPUfrequency; //converts ticks per second to seconds
+		p_timingData[i].GPUCalibration /= m_GPUfrequency;
+		p_timingData[i].start /= m_GPUfrequency;
+		p_timingData[i].end /= m_GPUfrequency;
+	}
+	p_timingData[0].CPUCalibration -= p_timingData[1].CPUCalibration;
+	p_timingData[1].CPUCalibration = 0;
+	unsigned long long referenceCPUCalibration = p_timingData[0].CPUCalibration;
+}
+
 
