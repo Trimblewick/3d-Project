@@ -55,6 +55,7 @@ bool GameClass::Initialize(Window* pWindow)
 		m_pD3DFactory->GetDevice()->CreateRenderTargetView(m_ppRTV[i], nullptr, handleDH);
 		handleDH.ptr += m_iIncrementSizeRTV;
 		m_pRTVWaitIndex[i] = -1;
+		m_pCopyWaitIndex[i] = -1;
 	}
 	m_pClearColor[0] = 0.1f;
 	m_pClearColor[1] = 0.5f;
@@ -346,10 +347,10 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
 	
 	m_pCopyHighway->QueueCL(pCopyCL);
-	int iCameraFence = m_pCopyHighway->ExecuteCQ();
+	//int iCameraFence = m_pCopyHighway->ExecuteCQ();
 	
 	TransitionBackBufferIntoRenderTargetState();
-	m_pCopyHighway->Wait(iCameraFence);
+	//m_pCopyHighway->Wait(iCameraFence);
 
 	Frame();
 	//PresentBackBuffer();
@@ -392,15 +393,6 @@ void GameClass::Frame()
 	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
 	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
 	m_pPlane->bind(pGraphicsCL);
-	
-	/*
-	m_ppBezierClass[0]->UpdateBezierPoints(pCopyCL, m_dDeltaTime);
-
-	m_ppBezierClass[0]->BindBezier(pGraphicsCL, iBufferIndex);
-	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 0);
-	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
-	m_pPlane->draw(pGraphicsCL);
-	m_ppBezierClass[0]->UnbindBezier(pGraphicsCL, iBufferIndex);*/
 
 	int iWaitGraphics = -1;
 	int iWaitCopy = -1;
@@ -410,33 +402,17 @@ void GameClass::Frame()
 		pCopyCL = m_pCopyHighway->GetFreshCL();
 		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime);
 		m_pCopyHighway->QueueCL(pCopyCL);
-		iWaitCopy = m_pCopyHighway->ExecuteCQ();
-		
-		
-		
-		//pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
-		/*
-		pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
-		pGraphicsCL->SetGraphicsRootSignature(m_pRS);
-		m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
-		m_pPlane->bind(pGraphicsCL);*/
-		
+	
 		m_ppBezierClass[i]->BindBezier(pGraphicsCL, iBufferIndex);
 		pGraphicsCL->SetGraphicsRoot32BitConstant(2, (m_pPlane->GetWidth() - 1) * i, 0);
 		pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
 		m_pPlane->draw(pGraphicsCL);
 		m_ppBezierClass[i]->UnbindBezier(pGraphicsCL, iBufferIndex);
 		
-		//m_pGraphicsHighway->QueueCL(pGraphicsCL);
-
-		m_pCopyHighway->Wait(iWaitCopy);
-		
-		//iWaitGraphics = m_pGraphicsHighway->ExecuteCQ();
-		//m_pGraphicsHighway->Wait(iWaitGraphics);
 	}
-	//m_pGraphicsHighway->Wait(iWaitGraphics);
-	//iWaitCopy = m_pCopyHighway->ExecuteCQ();
-	//m_pCopyHighway->Wait(iWaitCopy);
+
+	m_pCopyWaitIndex[(iBufferIndex + m_iBackBufferCount - 1) % m_iBackBufferCount] = m_pCopyHighway->ExecuteCQ();
+	
 	PresentBackBuffer(pGraphicsCL);
 }
 
@@ -458,6 +434,9 @@ void GameClass::PresentBackBuffer(ID3D12GraphicsCommandList* pCL)
 	pCL->ResourceBarrier(1, &barrierTransition);
 
 	m_pGraphicsHighway->QueueCL(pCL);
+
+	//WAIT COPY
+	m_pCopyHighway->Wait(m_pCopyWaitIndex[iBufferIndex]);
 	m_pRTVWaitIndex[iBufferIndex] = m_pGraphicsHighway->ExecuteCQ();
 
 	m_pSwapChain->Present(0, 0);

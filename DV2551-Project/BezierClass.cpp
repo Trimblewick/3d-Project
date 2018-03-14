@@ -3,12 +3,12 @@
 #include <time.h>
 #include <stdlib.h>
 
-BezierClass::BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource* pUploadHeap, ID3D12Resource* pConstantHeap, uint8_t* address, int iNrOfPoints, float4* pBezierPoints, double* pPointsOffset)
+BezierClass::BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource** ppUploadHeap, ID3D12Resource** ppConstantHeap, uint8_t* address, int iNrOfPoints, float4* pBezierPoints, double* pPointsOffset)
 {
 	m_iNrOfPoint = iNrOfPoints;
 	m_pConstantDescHeap = pDH;
-	m_pUploadHeap = pUploadHeap;
-	m_pConstantBuffer = pConstantHeap;
+	m_ppUploadHeap = ppUploadHeap;
+	m_ppConstantBuffer = ppConstantHeap;
 	m_address = address;
 	m_pDeltaTimePoints = pPointsOffset;
 	m_pBezierPoints = pBezierPoints;

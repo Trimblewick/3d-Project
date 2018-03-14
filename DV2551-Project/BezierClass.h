@@ -12,7 +12,7 @@ class BezierClass
 {
 public:
 	//public functions
-	BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource* pUploadHeap, ID3D12Resource* pConstantHeap, uint8_t* address, int iNrOfPoints, float4* pBezierPoints, double* pPointsOffset);
+	BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource** ppUploadHeap, ID3D12Resource** ppConstantHeap, uint8_t* address, int iNrOfPoints, float4* pBezierPoints, double* pPointsOffset);
 	~BezierClass();
 
 	void UpdateBezierPoints(ID3D12GraphicsCommandList* pCopyCL, double deltaTime);
@@ -33,6 +33,6 @@ private:
 	D3D12_RESOURCE_BARRIER				m_transitionToCopyDest;
 
 	ID3D12DescriptorHeap*				m_pConstantDescHeap;
-	ID3D12Resource*						m_pUploadHeap;
-	ID3D12Resource*						m_pConstantBuffer;
+	ID3D12Resource**					m_ppUploadHeap;
+	ID3D12Resource**					m_ppConstantBuffer;
 };

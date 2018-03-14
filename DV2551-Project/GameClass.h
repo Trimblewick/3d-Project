@@ -47,6 +47,8 @@ private:
 	ID3D12DescriptorHeap*			m_pDHRTV;
 	int								m_iIncrementSizeRTV;
 
+	int								m_pCopyWaitIndex[m_iBackBufferCount];
+
 	ID3D12Resource*					m_pDSV;
 	ID3D12DescriptorHeap*			m_pDHDSV;
 
@@ -61,6 +63,6 @@ private:
 	unsigned long long				m_iGPUFreq2;
 	unsigned long long				m_iGPUOffs2;
 	unsigned long long				m_iCPUOffs2;
-	
+	int asdf = 0;
 };
  
