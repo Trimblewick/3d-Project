@@ -8,7 +8,7 @@ Input SystemClass::s_input;
 
 bool SystemClass::s_bRunning;
 bool SystemClass::s_bInitialized;
-float SystemClass::s_fDeltaTime;
+double SystemClass::s_fDeltaTime;
 
 
 LRESULT CALLBACK SystemClass::EventHandler(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
@@ -85,7 +85,6 @@ void SystemClass::Run()
 	srand(time(NULL));
 	auto prevTime = std::chrono::steady_clock::now();
 	auto currentTime = std::chrono::steady_clock::now();
-
 
 	while (s_bRunning)
 	{

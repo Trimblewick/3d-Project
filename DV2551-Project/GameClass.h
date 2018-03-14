@@ -10,7 +10,10 @@
 class GameClass
 {
 private:
+	void							TransitionBackBufferIntoRenderTargetState();
 
+	void							Frame();
+	void							PresentBackBuffer(ID3D12GraphicsCommandList* pCL);
 public:
 	GameClass();
 	~GameClass();
@@ -19,9 +22,7 @@ public:
 	void							CleanUp();
 
 	void							Update(Input* input, double dDeltaTime);
-	void							TransitionBackBufferIntoRenderTargetState();
-	void							PresentBackBuffer();
-	void							Frame();
+	
 
 	
 
@@ -36,7 +37,8 @@ private:
 	GPUHighway*						m_pGraphicsHighway;
 	GPUHighway*						m_pCopyHighway;
 	Camera*							m_pCamera;
-	BezierClass*					m_pBezierClass[4];
+	int								m_iNrOfPlanes;
+	BezierClass**					m_ppBezierClass;
 	Plane*							m_pPlane;
 
 	IDXGISwapChain3*				m_pSwapChain;
@@ -45,11 +47,20 @@ private:
 	ID3D12DescriptorHeap*			m_pDHRTV;
 	int								m_iIncrementSizeRTV;
 
+	ID3D12Resource*					m_pDSV;
+	ID3D12DescriptorHeap*			m_pDHDSV;
+
 	ID3D12RootSignature*			m_pRS;
 	ID3D12PipelineState*			m_pPSO;
 
-	D3D12_VIEWPORT					m_viewport;
-	D3D12_RECT						m_rectScissor;
-
+	unsigned long long				m_iCPUOffs;
+	unsigned long long				m_iCPUFreq;
+	unsigned long long				m_iGPUFreq1;
+	unsigned long long				m_iGPUOffs1;
+	unsigned long long				m_iCPUOffs1;
+	unsigned long long				m_iGPUFreq2;
+	unsigned long long				m_iGPUOffs2;
+	unsigned long long				m_iCPUOffs2;
+	
 };
  

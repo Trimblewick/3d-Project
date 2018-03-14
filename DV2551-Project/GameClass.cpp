@@ -17,6 +17,7 @@ GameClass::~GameClass()
 
 bool GameClass::Initialize(Window* pWindow)
 {
+	srand(time(NULL));
 	m_pD3DFactory = new D3DFactory();
 	
 	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, 15);
@@ -53,13 +54,41 @@ bool GameClass::Initialize(Window* pWindow)
 		DxAssert(m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_ppRTV[i])));
 		m_pD3DFactory->GetDevice()->CreateRenderTargetView(m_ppRTV[i], nullptr, handleDH);
 		handleDH.ptr += m_iIncrementSizeRTV;
-		m_pRTVWaitIndex[i] = 0;
+		m_pRTVWaitIndex[i] = -1;
 	}
 	m_pClearColor[0] = 0.1f;
 	m_pClearColor[1] = 0.5f;
 	m_pClearColor[2] = 0.3f;
 	m_pClearColor[3] = 1.0f;
 	
+	m_pDHDSV = m_pD3DFactory->CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_DSV, false);
+
+	D3D12_CLEAR_VALUE clearValueDSV = {};
+	clearValueDSV.DepthStencil.Depth = 1.0f;
+	clearValueDSV.DepthStencil.Stencil = 0;
+	clearValueDSV.Format = DXGI_FORMAT_D32_FLOAT;
+
+	D3D12_RESOURCE_DESC resourceDescDSV;
+	resourceDescDSV.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+	resourceDescDSV.Alignment = 0;
+	resourceDescDSV.Width = pWindow->GetWidth();
+	resourceDescDSV.Height = pWindow->GetHeight();
+	resourceDescDSV.DepthOrArraySize = 1;
+	resourceDescDSV.MipLevels = 1;
+	resourceDescDSV.Format = DXGI_FORMAT_D32_FLOAT;
+	resourceDescDSV.SampleDesc.Count = 1;
+	resourceDescDSV.SampleDesc.Quality = 0;
+	resourceDescDSV.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+	resourceDescDSV.Flags = D3D12_RESOURCE_FLAG_ALLOW_DEPTH_STENCIL;
+
+	m_pDSV = m_pD3DFactory->CreateCommitedResource(D3D12_HEAP_TYPE_DEFAULT, &resourceDescDSV, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValueDSV);
+	
+	D3D12_DEPTH_STENCIL_VIEW_DESC descDSV = {};
+	descDSV.Format = DXGI_FORMAT_D32_FLOAT;
+	descDSV.ViewDimension = D3D12_DSV_DIMENSION_TEXTURE2D;
+	descDSV.Flags = D3D12_DSV_FLAG_NONE;
+
+	m_pD3DFactory->GetDevice()->CreateDepthStencilView(m_pDSV, &descDSV, m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
 	
 	//set up default blend
 	D3D12_RENDER_TARGET_BLEND_DESC descBlendStateRTV = {};
@@ -94,25 +123,33 @@ bool GameClass::Initialize(Window* pWindow)
 	descRasterizer.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
 	//Constant buffer RootSig setup
-	D3D12_ROOT_DESCRIPTOR d = {};
+	D3D12_ROOT_DESCRIPTOR cameraDescriptor = {};
 
-	D3D12_ROOT_DESCRIPTOR cbvDescriptor;
-	cbvDescriptor.RegisterSpace = 0;
-	cbvDescriptor.ShaderRegister = 1;
+	D3D12_ROOT_DESCRIPTOR bezierDescriptor;
+	bezierDescriptor.RegisterSpace = 0;
+	bezierDescriptor.ShaderRegister = 1;
+
+	D3D12_ROOT_CONSTANTS bezierOffsetRootConstant = {};
+	bezierOffsetRootConstant.Num32BitValues = 2;
+	bezierOffsetRootConstant.ShaderRegister = 2;
+	bezierOffsetRootConstant.RegisterSpace = 0;
 
 
-	D3D12_ROOT_PARAMETER rootParameters[2] = {};
-	rootParameters[0].Descriptor = d;
+	D3D12_ROOT_PARAMETER rootParameters[3] = {};
+	rootParameters[0].Descriptor = cameraDescriptor;
 	rootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	rootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	rootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_VERTEX;
-	rootParameters[1].Descriptor = cbvDescriptor;
+	rootParameters[1].Descriptor = bezierDescriptor;
 
+	rootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	rootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+	rootParameters[2].Constants = bezierOffsetRootConstant;
 
 	D3D12_ROOT_SIGNATURE_DESC descRS = {};
-	descRS.NumParameters = 2;
+	descRS.NumParameters = _countof(rootParameters);
 	descRS.pParameters = rootParameters;
 	descRS.Flags = D3D12_ROOT_SIGNATURE_FLAGS::D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT;
 	
@@ -120,6 +157,7 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pRS = m_pD3DFactory->CreateRS(&descRS);
 
 	ID3DBlob* pVSblob = m_pD3DFactory->CompileShader(L"VertexShader2.hlsl", "vs_5_1");
+	ID3DBlob* pGSblob = m_pD3DFactory->CompileShader(L"GeometryShader.hlsl", "gs_5_1");
 	ID3DBlob* pPSblob = m_pD3DFactory->CompileShader(L"PixelShader.hlsl", "ps_5_1");
 
 	D3D12_INPUT_ELEMENT_DESC inputLayout[] =
@@ -134,13 +172,30 @@ bool GameClass::Initialize(Window* pWindow)
 	inputLayoutDesc.NumElements = sizeof(inputLayout) / sizeof(D3D12_INPUT_ELEMENT_DESC);
 	inputLayoutDesc.pInputElementDescs = inputLayout;
 
+	D3D12_DEPTH_STENCILOP_DESC descDepthStencilOp;
+	descDepthStencilOp.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	descDepthStencilOp.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	descDepthStencilOp.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	descDepthStencilOp.StencilFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+
+	D3D12_DEPTH_STENCIL_DESC descDepthStencil = {};
+	descDepthStencil.DepthEnable = true;
+	descDepthStencil.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	descDepthStencil.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	descDepthStencil.StencilEnable = false;
+	descDepthStencil.StencilReadMask = D3D12_DEFAULT_STENCIL_READ_MASK;
+	descDepthStencil.StencilWriteMask = D3D12_DEFAULT_STENCIL_WRITE_MASK;
+	descDepthStencil.BackFace = descDepthStencilOp;
+	descDepthStencil.FrontFace = descDepthStencilOp;
+
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC descPSO = {};
 	descPSO.BlendState = descBlendSate;
-	//descPSO.DepthStencilState
+	descPSO.DepthStencilState = descDepthStencil;
 	descPSO.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	descPSO.NumRenderTargets = 1;
 	descPSO.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	descPSO.VS = { pVSblob->GetBufferPointer(), pVSblob->GetBufferSize() };
+	descPSO.GS = { pGSblob->GetBufferPointer(), pGSblob->GetBufferSize() };
 	descPSO.PS = { pPSblob->GetBufferPointer(), pPSblob->GetBufferSize() };
 	descPSO.RasterizerState = descRasterizer;
 	descPSO.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -156,23 +211,77 @@ bool GameClass::Initialize(Window* pWindow)
 
 	m_pCamera = m_pD3DFactory->CreateCamera(m_iBackBufferCount, (long)pWindow->GetWidth(), (long)pWindow->GetHeight());
 
+	D3D12_RESOURCE_DESC descHeap;
+	descHeap.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
+	descHeap.Alignment = 0;
+	descHeap.Width = 65536;
+	descHeap.Height = 1;
+	descHeap.DepthOrArraySize = 1;
+	descHeap.MipLevels = 1;
+	descHeap.Format = DXGI_FORMAT_UNKNOWN;
+	descHeap.SampleDesc.Count = 1;
+	descHeap.SampleDesc.Quality = 0;
+	descHeap.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+	descHeap.Flags = D3D12_RESOURCE_FLAG_NONE;
+
+	ID3D12Resource* pUploadHeapVertexBuffer = m_pD3DFactory->CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
+	ID3D12Resource* pUploadHeapIndexBuffer = m_pD3DFactory->CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
+
 	ID3D12GraphicsCommandList* pCL = m_pCopyHighway->GetFreshCL();
-	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16);
+	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16, pUploadHeapVertexBuffer, pUploadHeapIndexBuffer);
 	m_pCopyHighway->QueueCL(pCL);
 	m_pCopyHighway->Wait(m_pCopyHighway->ExecuteCQ());
+	SAFE_RELEASE(pUploadHeapVertexBuffer);//Only for init...
+	SAFE_RELEASE(pUploadHeapIndexBuffer);
 
-
-	//Create Bezier
-	int planeWidth = m_pPlane->GetWidth();
-
-	for (int z = 0; z < 2; ++z)
+	m_iNrOfPlanes = 10;
+	m_ppBezierClass = new BezierClass*[m_iNrOfPlanes];
+	for (int i = 0; i < m_iNrOfPlanes; ++i)
 	{
-		for (int x = 0; x < 2; ++x)
-		{
-			m_pBezierClass[x + z*2] = m_pD3DFactory->CreateBezier(16);
-			m_pBezierClass[x + z*2]->CalculateBezierPoints(planeWidth, x, z);
-		}
+		m_ppBezierClass[i] = m_pD3DFactory->CreateBezier(m_pPlane->GetWidth());
 	}
+
+
+
+
+
+	LARGE_INTEGER tempFreq;
+	QueryPerformanceCounter(&tempFreq);
+	m_iCPUOffs = tempFreq.QuadPart;
+	QueryPerformanceFrequency(&tempFreq);
+	m_iCPUFreq = tempFreq.QuadPart;
+
+	m_pGraphicsHighway->GetCQ()->GetClockCalibration(&m_iGPUOffs1, &m_iCPUOffs1);
+	m_pCopyHighway->GetCQ()->GetClockCalibration(&m_iGPUOffs2, &m_iCPUOffs2);
+	m_pGraphicsHighway->GetCQ()->GetTimestampFrequency(&m_iGPUFreq1);
+	m_pCopyHighway->GetCQ()->GetTimestampFrequency(&m_iGPUFreq2);
+
+
+
+
+	double actualGPUOffset1 = m_iGPUOffs1 / (double)m_iGPUFreq1;
+	double actualGPUOffset2 = m_iGPUOffs2 / (double)m_iGPUFreq2;
+	double diff = actualGPUOffset1 - actualGPUOffset2;
+
+	double actualCPUOffset1;// = (m_iCPUOffs1 - m_iCPUOffs) / (double)m_iCPUFreq;
+	double actualCPUOffset2;// = (m_iCPUOffs2 - m_iCPUOffs) / (double)m_iCPUFreq;
+
+	if (m_iCPUOffs1 < m_iCPUOffs2)
+	{
+		actualCPUOffset1 = (m_iCPUOffs1 - m_iCPUOffs) / (double)m_iCPUFreq;
+		actualCPUOffset2 = diff;//(m_iCPUOffs2 - m_iCPUOffs1 - m_iCPUOffs) / (double)m_iCPUFreq;
+	}
+	else
+	{
+		actualCPUOffset1 = 0.0;//(m_iCPUOffs1 - m_iCPUOffs2 - m_iCPUOffs) / (double)m_iCPUFreq;
+		actualCPUOffset2 = ((m_iCPUOffs2 - m_iCPUOffs) / (double)m_iCPUFreq) + diff;
+	}
+	//unsigned long long actualGPUOffset1 = m_iGPUOffs1
+
+	
+
+
+	int stopper = 0;
 
 	return true;
 }
@@ -204,8 +313,15 @@ void GameClass::CleanUp()
 		delete m_pCamera;
 		m_pCamera = nullptr;
 	}
-	SAFE_RELEASE(m_pSwapChain);
 	
+	for (int i = 0; i < m_iNrOfPlanes; ++i)
+	{
+		delete m_ppBezierClass[i];
+	}
+	delete[] m_ppBezierClass;
+
+	SAFE_RELEASE(m_pDSV);
+	SAFE_RELEASE(m_pDHDSV);
 	for (int i = 0; i < m_iBackBufferCount; ++i)
 	{
 		SAFE_RELEASE(m_ppRTV[i]);
@@ -213,41 +329,22 @@ void GameClass::CleanUp()
 	SAFE_RELEASE(m_pDHRTV);
 	SAFE_RELEASE(m_pPSO);
 	SAFE_RELEASE(m_pRS);
+	SAFE_RELEASE(m_pSwapChain);
 
-
-
-
-	for (int i = 0; i < sizeof(m_pBezierClass); ++i)
-	{
-		if (m_pBezierClass[i])
-		{
-			delete m_pBezierClass;
-			m_pBezierClass[i] = nullptr;
-		}
-	}
 
 }
 
-int test = 0;
 void GameClass::Update(Input * pInput, double dDeltaTime)
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	
 	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
-	
+
 	m_dDeltaTime = dDeltaTime;
 
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 
 	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex, pCopyCL);
-
-	//Update all Bézier points
-	for (int i = 0; i < 4; ++i)
-	{
-		m_pBezierClass[i]->UpdateBezierPoints(dDeltaTime);
-	}	
-
-
+	
 	m_pCopyHighway->QueueCL(pCopyCL);
 	int iCameraFence = m_pCopyHighway->ExecuteCQ();
 	
@@ -255,7 +352,7 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	m_pCopyHighway->Wait(iCameraFence);
 
 	Frame();
-	PresentBackBuffer();
+	//PresentBackBuffer();
 }
 
 void GameClass::TransitionBackBufferIntoRenderTargetState()
@@ -269,11 +366,11 @@ void GameClass::TransitionBackBufferIntoRenderTargetState()
 	transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
 	transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
 
-	D3D12_RESOURCE_BARRIER barrierTransition = {};
-	barrierTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrierTransition.Transition = transition;
+	D3D12_RESOURCE_BARRIER barrier = {};
+	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	barrier.Transition = transition;
 
-	pCL->ResourceBarrier(1, &barrierTransition);
+	pCL->ResourceBarrier(1, &barrier);
 	
 	m_pGraphicsHighway->QueueCL(pCL);
 }
@@ -285,53 +382,68 @@ void GameClass::Frame()
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
-	//Queue all patches
-	for (int i = 0; i < 4; ++i)
+	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+	ID3D12GraphicsCommandList* pCopyCL;// = m_pCopyHighway->GetFreshCL();
+	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
+	pGraphicsCL->ClearDepthStencilView(m_pDHDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAGS::D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
+	
+
+	pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
+	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
+	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
+	m_pPlane->bind(pGraphicsCL);
+	
+	/*
+	m_ppBezierClass[0]->UpdateBezierPoints(pCopyCL, m_dDeltaTime);
+
+	m_ppBezierClass[0]->BindBezier(pGraphicsCL, iBufferIndex);
+	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 0);
+	pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
+	m_pPlane->draw(pGraphicsCL);
+	m_ppBezierClass[0]->UnbindBezier(pGraphicsCL, iBufferIndex);*/
+
+	int iWaitGraphics = -1;
+	int iWaitCopy = -1;
+
+	for (int i = 0; i < 3; ++i)
 	{
-		ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+		pCopyCL = m_pCopyHighway->GetFreshCL();
+		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime);
+		m_pCopyHighway->QueueCL(pCopyCL);
+		iWaitCopy = m_pCopyHighway->ExecuteCQ();
+		
+		
+		
+		//pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
+		/*
+		pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
+		pGraphicsCL->SetGraphicsRootSignature(m_pRS);
+		m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
+		m_pPlane->bind(pGraphicsCL);*/
+		
+		m_ppBezierClass[i]->BindBezier(pGraphicsCL, iBufferIndex);
+		pGraphicsCL->SetGraphicsRoot32BitConstant(2, (m_pPlane->GetWidth() - 1) * i, 0);
+		pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
+		m_pPlane->draw(pGraphicsCL);
+		m_ppBezierClass[i]->UnbindBezier(pGraphicsCL, iBufferIndex);
+		
+		//m_pGraphicsHighway->QueueCL(pGraphicsCL);
 
-		if(i == 0)
-			pCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
-
-		pCL->OMSetRenderTargets(1, &handleDH, NULL, nullptr);
-		pCL->SetGraphicsRootSignature(m_pRS);
-
-		//Bind to command list
-		m_pCamera->BindCamera(pCL, iBufferIndex);
-		m_pPlane->bind(pCL);
-		m_pBezierClass[i]->BindBezier(pCL, iBufferIndex);
-
-		//Queue command list
-		m_pGraphicsHighway->QueueCL(pCL);
+		m_pCopyHighway->Wait(iWaitCopy);
+		
+		//iWaitGraphics = m_pGraphicsHighway->ExecuteCQ();
+		//m_pGraphicsHighway->Wait(iWaitGraphics);
 	}
-
-
-	//update<-cpu
-	//copy<-Q->fence1
-
-	//update
-	//copy<-Q->fence2
-
-	//wait fence1
-	//transition<-graphicsQ
-	//draw
-	//transition --
-
-	//update
-	//copy<-Q->fence3
-
-	//wait fence2
-	//transition<-graphicsQ
-	//draw
-	//transition --
+	//m_pGraphicsHighway->Wait(iWaitGraphics);
+	//iWaitCopy = m_pCopyHighway->ExecuteCQ();
+	//m_pCopyHighway->Wait(iWaitCopy);
+	PresentBackBuffer(pGraphicsCL);
 }
 
 
-void GameClass::PresentBackBuffer()
+void GameClass::PresentBackBuffer(ID3D12GraphicsCommandList* pCL)
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
-
 	
 	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
 	transition.pResource = m_ppRTV[iBufferIndex];
@@ -346,7 +458,6 @@ void GameClass::PresentBackBuffer()
 	pCL->ResourceBarrier(1, &barrierTransition);
 
 	m_pGraphicsHighway->QueueCL(pCL);
-
 	m_pRTVWaitIndex[iBufferIndex] = m_pGraphicsHighway->ExecuteCQ();
 
 	m_pSwapChain->Present(0, 0);

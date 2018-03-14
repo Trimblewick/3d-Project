@@ -27,6 +27,8 @@ public:
 	~Camera();
 
 	void									Update(Input* pInput, double dDeltaTime, unsigned int iBufferIndex, ID3D12GraphicsCommandList* pCopyCL);
+	void									TransitionToConstant(ID3D12GraphicsCommandList* pCL, unsigned int iBufferIndex);
+	void									TransitionToCopyDest(ID3D12GraphicsCommandList* pCL, unsigned int iBufferIndex);
 	void									BindCamera(ID3D12GraphicsCommandList* pCL, unsigned int iBufferIndex);
 	void									UnbindCamera(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex);
 private:
