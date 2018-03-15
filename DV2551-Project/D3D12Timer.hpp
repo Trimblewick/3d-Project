@@ -6,7 +6,7 @@
 class D3D12Timer {
     public:
         // Constructor.
-        D3D12Timer(ID3D12Device* pDevice)
+        D3D12Timer(ID3D12Device* pDevice, D3D12_QUERY_HEAP_TYPE type)
         {
             mpDevice = pDevice;
 
@@ -17,9 +17,10 @@ class D3D12Timer {
             mQueryCount = 2;
 
             D3D12_QUERY_HEAP_DESC queryHeapDesc;
-            queryHeapDesc.Type = D3D12_QUERY_HEAP_TYPE_TIMESTAMP;
+            queryHeapDesc.Type = type;
             queryHeapDesc.NodeMask = 0;
             queryHeapDesc.Count = mQueryCount;
+			
 
 			mpDevice->CreateQueryHeap(&queryHeapDesc, IID_PPV_ARGS(&mQueryHeap));
         

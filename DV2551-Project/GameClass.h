@@ -6,6 +6,7 @@
 #include "Window.h"
 #include "BezierClass.h"
 #include "Plane.h"
+#include "D3D12Timer.hpp"
 
 class GameClass
 {
@@ -50,18 +51,24 @@ private:
 
 	int								m_pCopyWaitIndex[m_iBackBufferCount];
 
+	void							TicksToSeconds();
+
 	ID3D12Resource*					m_pDSV;
 	ID3D12DescriptorHeap*			m_pDHDSV;
 
 	ID3D12RootSignature*			m_pRS;
 	ID3D12PipelineState*			m_pPSO;
 
+	D3D12Timer*						m_pGraphicsTimer;
+	D3D12Timer*						m_pCopyTimer;
+
+	unsigned long long				m_CPUcount;
 	unsigned long long				m_CPUfrequency;
-	unsigned long long				m_GPUfrequency[2];
 
 	struct TimingData {
 		unsigned long long GPUCalibration;
 		unsigned long long CPUCalibration;
+		unsigned long long GPUFrequency;
 		unsigned long long start;
 		unsigned long long end;
 	} m_pTimingData[2];
