@@ -394,15 +394,15 @@ void GameClass::Frame()
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
 	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
-	ID3D12GraphicsCommandList* stefanCL = m_pCopyHighway->GetFreshCL();// = m_pCopyHighway->GetFreshCL();
+	//ID3D12GraphicsCommandList* stefanCL = m_pCopyHighway->GetFreshCL();// = m_pCopyHighway->GetFreshCL();
 	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
 	pGraphicsCL->ClearDepthStencilView(m_pDHDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAGS::D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	D3D12Timer timer(m_pD3DFactory->GetDevice());
+	//D3D12Timer timer(m_pD3DFactory->GetDevice());
 
-	m_pCopyHighway->GetCQ()->GetClockCalibration(&(m_pTimingData[0].GPUCalibration), &(m_pTimingData[0].CPUCalibration));
+	//m_pCopyHighway->GetCQ()->GetClockCalibration(&(m_pTimingData[0].GPUCalibration), &(m_pTimingData[0].CPUCalibration));
 
-	timer.Start(stefanCL);
+	//timer.Start(stefanCL);
 
 	pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
 	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
@@ -419,7 +419,7 @@ void GameClass::Frame()
 
 	}
 	m_pGraphicsHighway->QueueCL(pGraphicsCL);
-	timer.Stop(stefanCL);
+	//timer.Stop(stefanCL);
 }
 
 
