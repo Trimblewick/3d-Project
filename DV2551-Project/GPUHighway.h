@@ -42,14 +42,5 @@ private:
 
 	HANDLE									m_handleFence;
 
-	unsigned long long						m_CPUfrequency;
-	unsigned long long						m_GPUfrequency;
-
-	struct TimingData {
-		unsigned long long GPUCalibration;
-		unsigned long long CPUCalibration;
-		unsigned long long start;
-		unsigned long long end;
-	} p_timingData[2];
 };
 
