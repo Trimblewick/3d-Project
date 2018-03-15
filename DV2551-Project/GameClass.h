@@ -13,7 +13,7 @@ private:
 	void							TransitionBackBufferIntoRenderTargetState();
 
 	void							Frame();
-	void							PresentBackBuffer(ID3D12GraphicsCommandList* pCL);
+	void							PresentBackBuffer();
 public:
 	GameClass();
 	~GameClass();

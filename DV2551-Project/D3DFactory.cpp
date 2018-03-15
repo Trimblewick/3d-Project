@@ -271,7 +271,7 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 	int iIncrementSizeCBV = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = pDH->GetCPUDescriptorHandleForHeapStart();
 
-	unsigned char** ppBufferAddressPointer = new unsigned char*;
+	unsigned char** ppBufferAddressPointer = new unsigned char*[iBufferCount];
 	ID3D12Resource** ppBufferMatrix = new ID3D12Resource*[iBufferCount];
 	ID3D12Resource*	pUploadHeap = CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &descResource, D3D12_RESOURCE_STATE_GENERIC_READ);
 
@@ -281,25 +281,25 @@ Camera * D3DFactory::CreateCamera(unsigned int iBufferCount, long iWidthWindow, 
 	
 	for (unsigned int i = 0; i < iBufferCount; ++i)
 	{
-		ppBufferMatrix[i] = CreateCommitedResource(D3D12_HEAP_TYPE_DEFAULT, &descResource, D3D12_RESOURCE_STATE_COPY_DEST);
+		ppBufferMatrix[i] = CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &descResource, D3D12_RESOURCE_STATE_GENERIC_READ);//D3D12_HEAP_TYPE_DEFAULT, &descResource, D3D12_RESOURCE_STATE_COPY_DEST);
 
 		descCB.BufferLocation = ppBufferMatrix[i]->GetGPUVirtualAddress();
 
 		m_pDevice->CreateConstantBufferView(&descCB, handleDH);
 		handleDH.ptr += iIncrementSizeCBV;
+
+		D3D12_RANGE rangeRead = {};
+		DxAssert(ppBufferMatrix[i]->Map(0, &rangeRead, reinterpret_cast<void**>(&ppBufferAddressPointer[i])));
 	}
 
-	D3D12_RANGE rangeRead = {};
-	DxAssert(pUploadHeap->Map(0, &rangeRead, reinterpret_cast<void**>(ppBufferAddressPointer)));
-	
 	return new Camera(data, viewport, rectScissor, pUploadHeap, ppBufferAddressPointer, ppBufferMatrix , iBufferCount, pDH);
 }
 
-BezierClass* D3DFactory::CreateBezier(int iWidthPlane)
+BezierClass* D3DFactory::CreateBezier(int iWidthPlane, unsigned int iBufferCount)
 {
-	ID3D12DescriptorHeap* pDH = CreateDH(1, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
-	ID3D12Resource* pUploadCB = nullptr;
-	ID3D12Resource* pCB = nullptr;
+	ID3D12DescriptorHeap* pDH = CreateDH(3, D3D12_DESCRIPTOR_HEAP_TYPE::D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV, true);
+	ID3D12Resource** ppUploadCB = new ID3D12Resource*[iBufferCount];
+	ID3D12Resource** ppCB = new ID3D12Resource*[iBufferCount];
 	int iNrOfPoints = 16;
 	float4* pBezierPoints = new float4[iNrOfPoints];
 	int iSize = sizeof(float4) * iNrOfPoints;
@@ -339,22 +339,30 @@ BezierClass* D3DFactory::CreateBezier(int iWidthPlane)
 	resourceDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 	resourceDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
 
-	pUploadCB = CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
-	pCB = CreateCommitedResource(D3D12_HEAP_TYPE_DEFAULT, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST);
-
-	D3D12_CONSTANT_BUFFER_VIEW_DESC m_cbDesc;
-	m_cbDesc.BufferLocation = pUploadCB->GetGPUVirtualAddress();
-	m_cbDesc.SizeInBytes = iSize;//already 256 bytes aligned
-
-	m_pDevice->CreateConstantBufferView(&m_cbDesc, pDH->GetCPUDescriptorHandleForHeapStart());
-
+	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = pDH->GetCPUDescriptorHandleForHeapStart();
+	unsigned int iHeapOffs = m_pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	
+	unsigned char** ppBufferAddressPointer = new unsigned char*[iBufferCount];
 	D3D12_RANGE range = { 0,0 }; //Entire range
 
-	uint8_t* address;
-	pUploadCB->Map(0, &range, reinterpret_cast<void**>(&address));
-	memcpy(address, pBezierPoints, iSize);
+	D3D12_CONSTANT_BUFFER_VIEW_DESC cbDesc;
+	cbDesc.SizeInBytes = iSize;//already 256 bytes aligned
+	for (int i = 0; i < iBufferCount; ++i)
+	{
+		ppUploadCB[i] = CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ);
+		ppCB[i] = CreateCommitedResource(D3D12_HEAP_TYPE_DEFAULT, &resourceDesc, D3D12_RESOURCE_STATE_COPY_DEST);
+		cbDesc.BufferLocation = ppUploadCB[i]->GetGPUVirtualAddress();
 
-	return new BezierClass(pDH, pUploadCB, pCB, address, iNrOfPoints, pBezierPoints, pPointsOffset);;
+		m_pDevice->CreateConstantBufferView(&cbDesc, handleDH);
+
+		ppUploadCB[i]->Map(0, &range, reinterpret_cast<void**>(&ppBufferAddressPointer[i]));
+		memcpy(ppBufferAddressPointer[i], pBezierPoints, iSize);
+
+		handleDH.ptr += iHeapOffs;
+	}
+	
+
+	return new BezierClass(pDH, ppUploadCB, ppCB, ppBufferAddressPointer, iNrOfPoints, pBezierPoints, pPointsOffset, iBufferCount);
 }
 
 Plane * D3DFactory::CreatePlane(ID3D12GraphicsCommandList* pCmdList, unsigned int tiles, ID3D12Resource* pUploadHeapVertexBuffer, ID3D12Resource* pUploadHeapIndexBuffer)
