@@ -26,7 +26,7 @@ public:
 		ID3D12Resource** ppBufferMatrixHeap, unsigned int iBufferCount, ID3D12DescriptorHeap* pDH);
 	~Camera();
 
-	void									Update(Input* pInput, double dDeltaTime, unsigned int iBufferIndex, ID3D12GraphicsCommandList* pCopyCL);
+	void									Update(Input* pInput, double dDeltaTime, unsigned int iBufferIndex);
 	void									TransitionToConstant(ID3D12GraphicsCommandList* pCL, unsigned int iBufferIndex);
 	void									TransitionToCopyDest(ID3D12GraphicsCommandList* pCL, unsigned int iBufferIndex);
 	void									BindCamera(ID3D12GraphicsCommandList* pCL, unsigned int iBufferIndex);

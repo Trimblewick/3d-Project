@@ -66,7 +66,7 @@ Camera::~Camera()
 	delete[] m_pTransitionToCopyDest;
 }
 
-void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex, ID3D12GraphicsCommandList* pCopyCL)
+void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex)
 {
 	if (pInput->IsKeyDown(pInput->LEFT_ARROW))
 	{
@@ -133,9 +133,9 @@ void Camera::Update(Input * pInput, double dDeltaTime, unsigned int iBufferIndex
 	m_data.viewMat = DirectX::XMMatrixTranspose(DirectX::XMMatrixLookToLH(DirectX::XMLoadFloat3(&m_data.position), DirectX::XMLoadFloat3(&m_data.forward), DirectX::XMLoadFloat3(&m_data.up)));
 	m_data.vpMat = DirectX::XMMatrixMultiply(m_data.projMat, m_data.viewMat);
 
-	memcpy(*m_ppUploadHeapAdressPointer, &m_data, sizeof(CameraBuffer));
+	memcpy(m_ppUploadHeapAdressPointer[iBufferIndex], &m_data, sizeof(CameraBuffer));
 	
-	pCopyCL->CopyResource(m_ppBufferMatrixHeap[iBufferIndex], m_pUploadHeap);
+	//pCopyCL->CopyResource(m_ppBufferMatrixHeap[iBufferIndex], m_pUploadHeap);
 }
 
 void Camera::TransitionToConstant(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
@@ -151,13 +151,12 @@ void Camera::BindCamera(ID3D12GraphicsCommandList * pCL, unsigned int iBufferInd
 {
 	pCL->RSSetViewports(1, &m_viewport);
 	pCL->RSSetScissorRects(1, &m_rectscissor);
-	pCL->ResourceBarrier(1, &m_pTransitionToConstant[iBufferIndex]);
+	//pCL->ResourceBarrier(1, &m_pTransitionToConstant[iBufferIndex]);
 	pCL->SetGraphicsRootConstantBufferView(0, m_ppBufferMatrixHeap[iBufferIndex]->GetGPUVirtualAddress());
 }
 
 void Camera::UnbindCamera(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
-{
-	pCL->ResourceBarrier(1, &m_pTransitionToCopyDest[iBufferIndex]);
+{//pCL->ResourceBarrier(1, &m_pTransitionToCopyDest[iBufferIndex]);
 }
 
 

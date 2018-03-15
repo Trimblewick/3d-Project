@@ -11,9 +11,8 @@ class GameClass
 {
 private:
 	void							TransitionBackBufferIntoRenderTargetState();
-
 	void							Frame();
-	void							PresentBackBuffer(ID3D12GraphicsCommandList* pCL);
+	void							PresentBackBuffer();
 public:
 	GameClass();
 	~GameClass();
@@ -43,9 +42,13 @@ private:
 
 	IDXGISwapChain3*				m_pSwapChain;
 	ID3D12Resource*					m_ppRTV[m_iBackBufferCount];
+	D3D12_RESOURCE_BARRIER			m_pBarrierTransitionToRTV[m_iBackBufferCount];
+	D3D12_RESOURCE_BARRIER			m_pBarrierTransitionToPresent[m_iBackBufferCount];
 	int								m_pRTVWaitIndex[m_iBackBufferCount];
 	ID3D12DescriptorHeap*			m_pDHRTV;
 	int								m_iIncrementSizeRTV;
+
+	int								m_pCopyWaitIndex[m_iBackBufferCount];
 
 	ID3D12Resource*					m_pDSV;
 	ID3D12DescriptorHeap*			m_pDHDSV;
