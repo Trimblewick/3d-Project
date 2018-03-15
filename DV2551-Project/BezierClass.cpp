@@ -32,6 +32,7 @@ BezierClass::BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource** ppUploadHea
 	transitionFrom.StateAfter = D3D12_RESOURCE_STATE_COPY_DEST;
 	transitionFrom.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	
+	_iBufferCount = iBufferCount;
 	for (int i = 0; i < iBufferCount; ++i)
 	{
 		transitionTo.pResource = ppConstantHeap[i];		

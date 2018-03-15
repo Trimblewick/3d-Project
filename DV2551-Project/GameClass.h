@@ -11,7 +11,6 @@ class GameClass
 {
 private:
 	void							TransitionBackBufferIntoRenderTargetState();
-
 	void							Frame();
 	void							PresentBackBuffer();
 public:
