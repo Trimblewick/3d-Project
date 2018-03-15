@@ -350,6 +350,8 @@ void GameClass::CleanUp()
 void GameClass::Update(Input * pInput, double dDeltaTime)
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
+	m_dDeltaTime = dDeltaTime;
+
 	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 	for (int i = 0; i < m_iNrOfPlanes; ++i)
@@ -357,10 +359,12 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime, iBufferIndex);
 	}
 	m_pCopyHighway->QueueCL(pCopyCL);
+
+	
+	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex);
 	m_pCopyWaitIndex[iBufferIndex] = m_pCopyHighway->ExecuteCQ();
 
-	m_dDeltaTime = dDeltaTime;
-	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex);
+	
 	
 	TransitionBackBufferIntoRenderTargetState();
 	Frame();
