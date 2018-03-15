@@ -33,7 +33,6 @@ public:
 	static void Stop();
 	static void CleanUp();
 
-
 private:
 
 	static Window s_window;

@@ -85,6 +85,9 @@ void SystemClass::Run()
 	srand(time(NULL));
 	auto prevTime = std::chrono::steady_clock::now();
 	auto currentTime = std::chrono::steady_clock::now();
+	int smoothFPSCounter = 0;
+	int addFPS = 0;
+	float fFPS = 0;
 
 	while (s_bRunning)
 	{
@@ -106,9 +109,19 @@ void SystemClass::Run()
 			auto currentTime = std::chrono::steady_clock::now();
 			s_fDeltaTime = (currentTime - prevTime).count() / 1000000000.0f;
 			prevTime = currentTime;
+			
+			if(smoothFPSCounter == 0)
+				fFPS = 1.0f / s_fDeltaTime;
 
-			//fps counter
-			float fFPS = 1.0f / s_fDeltaTime;
+			fFPS = fFPS;
+			if (smoothFPSCounter % 512 == 0 && smoothFPSCounter != 0)
+			{
+				fFPS = addFPS / 512;
+				addFPS = 0;
+			}
+			addFPS += 1.0f / s_fDeltaTime;
+			smoothFPSCounter += 1;
+
 			std::string sFPS = "FPS: " + std::to_string(fFPS);
 			s_window.SetTitle(sFPS);
 

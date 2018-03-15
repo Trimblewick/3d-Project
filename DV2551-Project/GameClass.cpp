@@ -250,13 +250,13 @@ bool GameClass::Initialize(Window* pWindow)
 	ID3D12Resource* pUploadHeapIndexBuffer = m_pD3DFactory->CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 	ID3D12GraphicsCommandList* pCL = m_pCopyHighway->GetFreshCL();
-	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16, pUploadHeapVertexBuffer, pUploadHeapIndexBuffer);
+	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 52, pUploadHeapVertexBuffer, pUploadHeapIndexBuffer);
 	m_pCopyHighway->QueueCL(pCL);
 	m_pCopyHighway->Wait(m_pCopyHighway->ExecuteCQ());
 	SAFE_RELEASE(pUploadHeapVertexBuffer);//Only for init...
 	SAFE_RELEASE(pUploadHeapIndexBuffer);
 
-	m_iNrOfPlanes = 10;
+	m_iNrOfPlanes = 64;
 	m_ppBezierClass = new BezierClass*[m_iNrOfPlanes];
 	for (int i = 0; i < m_iNrOfPlanes; ++i)
 	{
@@ -366,6 +366,12 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime, iBufferIndex);
 	}
 	m_pCopyHighway->QueueCL(pCopyCL);
+
+	//D3D12Timer timer(m_pD3DFactory->GetDevice());
+	//ID3D12GraphicsCommandList* stefanCL = m_pCopyHighway->GetFreshCL();
+	//m_pCopyHighway->GetCQ()->GetClockCalibration(&(m_pTimingData[0].GPUCalibration), &(m_pTimingData[0].CPUCalibration));
+	//timer.Start(stefanCL);
+
 	m_pCopyWaitIndex[iBufferIndex] = m_pCopyHighway->ExecuteCQ();
 
 	m_dDeltaTime = dDeltaTime;
@@ -394,22 +400,18 @@ void GameClass::Frame()
 	handleDH.ptr += m_iIncrementSizeRTV * iBufferIndex;
 
 	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
-	//ID3D12GraphicsCommandList* stefanCL = m_pCopyHighway->GetFreshCL();// = m_pCopyHighway->GetFreshCL();
+	// = m_pCopyHighway->GetFreshCL();
 	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
 	pGraphicsCL->ClearDepthStencilView(m_pDHDSV->GetCPUDescriptorHandleForHeapStart(), D3D12_CLEAR_FLAGS::D3D12_CLEAR_FLAG_DEPTH, 1.0f, 0, 0, nullptr);
 
-	//D3D12Timer timer(m_pD3DFactory->GetDevice());
-
-	//m_pCopyHighway->GetCQ()->GetClockCalibration(&(m_pTimingData[0].GPUCalibration), &(m_pTimingData[0].CPUCalibration));
-
-	//timer.Start(stefanCL);
+	
 
 	pGraphicsCL->OMSetRenderTargets(1, &handleDH, NULL, &m_pDHDSV->GetCPUDescriptorHandleForHeapStart());
 	pGraphicsCL->SetGraphicsRootSignature(m_pRS);
 	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
 	m_pPlane->bind(pGraphicsCL);
 
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < m_iNrOfPlanes; ++i)
 	{
 		m_ppBezierClass[i]->BindBezier(pGraphicsCL, iBufferIndex);							//Queue uploaded graphics
 		pGraphicsCL->SetGraphicsRoot32BitConstant(2, (m_pPlane->GetWidth() - 1) * i, 0);
