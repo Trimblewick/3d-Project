@@ -42,6 +42,8 @@ private:
 
 	IDXGISwapChain3*				m_pSwapChain;
 	ID3D12Resource*					m_ppRTV[m_iBackBufferCount];
+	D3D12_RESOURCE_BARRIER			m_pBarrierTransitionToRTV[m_iBackBufferCount];
+	D3D12_RESOURCE_BARRIER			m_pBarrierTransitionToPresent[m_iBackBufferCount];
 	int								m_pRTVWaitIndex[m_iBackBufferCount];
 	ID3D12DescriptorHeap*			m_pDHRTV;
 	int								m_iIncrementSizeRTV;

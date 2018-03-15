@@ -49,6 +49,14 @@ bool GameClass::Initialize(Window* pWindow)
 	m_iIncrementSizeRTV = m_pD3DFactory->GetDevice()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	D3D12_CPU_DESCRIPTOR_HANDLE handleDH = m_pDHRTV->GetCPUDescriptorHandleForHeapStart();
 
+	D3D12_RESOURCE_TRANSITION_BARRIER transitionTo = {};
+	transitionTo.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
+	transitionTo.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
+
+	D3D12_RESOURCE_TRANSITION_BARRIER transitionFrom = {};
+	transitionFrom.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
+	transitionFrom.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
+
 	for (int i = 0; i < m_iBackBufferCount; ++i)
 	{
 		DxAssert(m_pSwapChain->GetBuffer(i, IID_PPV_ARGS(&m_ppRTV[i])));
@@ -56,6 +64,17 @@ bool GameClass::Initialize(Window* pWindow)
 		handleDH.ptr += m_iIncrementSizeRTV;
 		m_pRTVWaitIndex[i] = -1;
 		m_pCopyWaitIndex[i] = -1;
+
+		transitionTo.pResource = m_ppRTV[i];
+		transitionFrom.pResource = m_ppRTV[i];
+
+		m_pBarrierTransitionToRTV[i] = {};
+		m_pBarrierTransitionToRTV[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		m_pBarrierTransitionToRTV[i].Transition = transitionTo;
+
+		m_pBarrierTransitionToPresent[i] = {};
+		m_pBarrierTransitionToPresent[i].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+		m_pBarrierTransitionToPresent[i].Transition = transitionFrom;
 	}
 	m_pClearColor[0] = 0.1f;
 	m_pClearColor[1] = 0.5f;
@@ -353,17 +372,7 @@ void GameClass::TransitionBackBufferIntoRenderTargetState()
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	
 	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
-
-	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
-	transition.pResource = m_ppRTV[iBufferIndex];
-	transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-	transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-
-	D3D12_RESOURCE_BARRIER barrier = {};
-	barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrier.Transition = transition;
-
-	pCL->ResourceBarrier(1, &barrier);
+	pCL->ResourceBarrier(1, &m_pBarrierTransitionToRTV[iBufferIndex]);
 	
 	m_pGraphicsHighway->QueueCL(pCL);
 }
@@ -403,18 +412,9 @@ void GameClass::PresentBackBuffer()
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
-	
-	D3D12_RESOURCE_TRANSITION_BARRIER transition = {};
-	transition.pResource = m_ppRTV[iBufferIndex];
-	transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-
-	D3D12_RESOURCE_BARRIER barrierTransition = {};
-	barrierTransition.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	barrierTransition.Transition = transition;
 
 	m_pCamera->UnbindCamera(pCL, iBufferIndex);
-	pCL->ResourceBarrier(1, &barrierTransition);
+	pCL->ResourceBarrier(1, &m_pBarrierTransitionToPresent[iBufferIndex]);
 
 	m_pGraphicsHighway->QueueCL(pCL);
 
