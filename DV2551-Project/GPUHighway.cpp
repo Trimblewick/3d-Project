@@ -162,4 +162,27 @@ void GPUHighway::WaitForAllFences()
 	}
 }
 
+void GPUHighway::TicksToSeconds()
+{
+
+	////Convert ticks to second for CPU/GPU calibration, start and end
+	//for (int i = 0; i < 2; ++i)
+	//{
+	//	p_timingData[i].CPUCalibration /= m_CPUfrequency; //converts ticks per second to seconds
+	//	p_timingData[i].GPUCalibration /= m_GPUfrequency[i];
+	//	p_timingData[i].start *= 1000000000;
+	//	p_timingData[i].end *= 1000000000;
+	//}
+
+	////Calculate offset for CQ1
+	//p_timingData[0].GPUCalibration -= p_timingData[1].GPUCalibration;
+	//p_timingData[0].CPUCalibration -= p_timingData[1].CPUCalibration;
+
+	//p_timingData[0].GPUCalibration -= p_timingData[0].CPUCalibration;
+
+	////Offset start and end for CQ1
+	//p_timingData[1].start += p_timingData[0].GPUCalibration;
+	//p_timingData[1].end += p_timingData[0].GPUCalibration;
+}
+
 

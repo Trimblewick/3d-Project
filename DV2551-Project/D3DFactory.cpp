@@ -32,7 +32,7 @@ D3DFactory::D3DFactory()
 		}
 
 		//create bogo-device to 
-		if (SUCCEEDED(D3D12CreateDevice(pTempAdapter, D3D_FEATURE_LEVEL_11_0, _uuidof(ID3D12Device), nullptr)))
+		if (SUCCEEDED(D3D12CreateDevice(pTempAdapter, D3D_FEATURE_LEVEL_12_1, _uuidof(ID3D12Device), nullptr)))
 		{
 			iAdapterFound++;
 			size_t iVideoMemory = desc1Adapter.DedicatedVideoMemory;
@@ -49,7 +49,7 @@ D3DFactory::D3DFactory()
 
 	assert(iAdapterFound > 0);
 
-	DxAssert(D3D12CreateDevice(pAdapter, D3D_FEATURE_LEVEL_11_0, IID_PPV_ARGS(&m_pDevice)));
+	DxAssert(D3D12CreateDevice(pAdapter, D3D_FEATURE_LEVEL_12_1, IID_PPV_ARGS(&m_pDevice)));
 	
 }
 
