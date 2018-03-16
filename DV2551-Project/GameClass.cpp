@@ -22,9 +22,6 @@ bool GameClass::Initialize(Window* pWindow)
 	m_pGraphicsHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, 15);
 	m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 5);
 
-	//Test
-	//m_pGraphicsHighway->TicksToSeconds();
-
 	//set up swapchain with the graphics highway
 	DXGI_MODE_DESC descMode = {};
 	descMode.Width = pWindow->GetWidth();
@@ -249,13 +246,13 @@ bool GameClass::Initialize(Window* pWindow)
 	ID3D12Resource* pUploadHeapIndexBuffer = m_pD3DFactory->CreateCommitedResource(D3D12_HEAP_TYPE_UPLOAD, &descHeap, D3D12_RESOURCE_STATE_GENERIC_READ);
 
 	ID3D12GraphicsCommandList* pCL = m_pCopyHighway->GetFreshCL();
-	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 52, pUploadHeapVertexBuffer, pUploadHeapIndexBuffer);
+	m_pPlane = m_pD3DFactory->CreatePlane(pCL, 16, pUploadHeapVertexBuffer, pUploadHeapIndexBuffer);
 	m_pCopyHighway->QueueCL(pCL);
 	m_pCopyHighway->Wait(m_pCopyHighway->ExecuteCQ());
 	SAFE_RELEASE(pUploadHeapVertexBuffer);//Only for init...
 	SAFE_RELEASE(pUploadHeapIndexBuffer);
 
-	m_iNrOfPlanes = 64;
+	m_iNrOfPlanes = 1024;
 	m_ppBezierClass = new BezierClass*[m_iNrOfPlanes];
 	for (int i = 0; i < m_iNrOfPlanes; ++i)
 	{
@@ -354,7 +351,15 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 	
 	m_pCopyTimer->Start(pCopyCL);
-	for (int i = 0; i < m_iNrOfPlanes; ++i)
+	int i = 0;
+	for (; i < m_iNrOfPlanes/2; ++i)
+	{
+		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime, iBufferIndex);
+	}
+	m_pCopyHighway->QueueCL(pCopyCL);
+	m_pCopyWaitIndex[iBufferIndex] = m_pCopyHighway->ExecuteCQ();
+	pCopyCL = m_pCopyHighway->GetFreshCL();
+	for (; i < m_iNrOfPlanes; ++i)
 	{
 		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime, iBufferIndex);
 	}
@@ -402,11 +407,11 @@ void GameClass::Frame()
 	m_pCamera->BindCamera(pGraphicsCL, iBufferIndex);
 	m_pPlane->bind(pGraphicsCL);
 
-	for (int i = 0; i < m_iNrOfPlanes; ++i)
+	for (int i = 0; i < m_iNrOfPlanes/2; ++i)
 	{
 		m_ppBezierClass[i]->BindBezier(pGraphicsCL, iBufferIndex);							//Queue uploaded graphics
-		pGraphicsCL->SetGraphicsRoot32BitConstant(2, (m_pPlane->GetWidth() - 1) * i, 0);
-		pGraphicsCL->SetGraphicsRoot32BitConstant(2, 0, 1);
+		pGraphicsCL->SetGraphicsRoot32BitConstant(2, (m_pPlane->GetWidth() - 4) * (i % (int)std::sqrt(m_iNrOfPlanes)), 0);
+		pGraphicsCL->SetGraphicsRoot32BitConstant(2, (m_pPlane->GetWidth() - 4) * (i / (int)std::sqrt(m_iNrOfPlanes)), 1);
 		m_pPlane->draw(pGraphicsCL);
 		m_ppBezierClass[i]->UnbindBezier(pGraphicsCL, iBufferIndex);
 
@@ -421,10 +426,10 @@ void GameClass::Frame()
 	m_pGraphicsHighway->QueueCL(pGraphicsCL);
 
 
-	m_pCopyHighway->Wait(m_pCopyWaitIndex[iBufferIndex]);	//WAIT COPY
+	m_pCopyHighway->WaitForAllFences();//Wait(m_pCopyWaitIndex[iBufferIndex]);	//WAIT COPY
 
 	
-	//if (iBufferIndex == 0)
+	if (iBufferIndex == 0)
 	{
 		m_pCopyTimer->CalculateTime();
 		m_pTimingData[0].start = m_pCopyTimer->GetBeginTime();
