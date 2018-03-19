@@ -10,6 +10,10 @@ class D3D12Timer {
         {
             mpDevice = pDevice;
 
+			D3D12_FEATURE_DATA_D3D12_OPTIONS3 featurecheck;
+			HRESULT hr = pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS3, &featurecheck, sizeof(featurecheck));
+
+
             mActive = false;
             mDeltaTime = 0;
             mBeginTime = 0;

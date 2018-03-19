@@ -9,8 +9,9 @@
 class BezierClass
 {
 public:
-	static void SetUploadHeaps(ID3D12Resource** ppUploadHeap);
-	static ID3D12Resource** GetUploadHeaps();
+	static void AddUploadHeap(ID3D12Resource** ppUploadHeap);
+	static ID3D12Resource** GetLastUploadHeap();
+	//static std::vector<ID3D12Resource**> GetUploadHeaps();
 
 	BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource*** pppUploadHeap, ID3D12Resource** ppConstantHeap, 
 		unsigned char*** pppBufferAddressPointer, int iNrOfPoints, float4* pBezierPoints, double* pPointsTimeOffset, unsigned int iBufferCount);
@@ -21,7 +22,7 @@ public:
 	void UnbindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex);
 
 private:
-	static ID3D12Resource**				s_ppUploadHeaps;
+	static std::vector<ID3D12Resource**>s_pppUploadHeaps;
 
 
 	float4*								m_pBezierPoints;

@@ -14,16 +14,17 @@
 #include <time.h>
 #include <stdlib.h>
 
-ID3D12Resource**				BezierClass::s_ppUploadHeaps;
+std::vector<ID3D12Resource**>				BezierClass::s_pppUploadHeaps;
 
-void BezierClass::SetUploadHeaps(ID3D12Resource** pUploadHeap)
+void BezierClass::AddUploadHeap(ID3D12Resource ** ppUploadHeap)
 {
-	s_ppUploadHeaps = pUploadHeap;
+	s_pppUploadHeaps.push_back(ppUploadHeap);
 }
 
-ID3D12Resource ** BezierClass::GetUploadHeaps()
+ID3D12Resource ** BezierClass::GetLastUploadHeap()
 {
-	return s_ppUploadHeaps;
+	if (s_pppUploadHeaps.size() > 0)
+		return s_pppUploadHeaps.back();
 }
 
 BezierClass::BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource*** pppUploadHeap, ID3D12Resource** ppConstantHeap,
@@ -105,8 +106,10 @@ void BezierClass::UpdateBezierPoints(ID3D12GraphicsCommandList* pCopyCL, double 
 
 		m_pBezierPoints[i].y = sin(m_pDeltaTimePoints[i]);
 	}
-	int k = (int)m_bPingPong;
+	int k = 0;// (int)m_bPingPong;
 	bool test = !m_bPingPong;
+
+	s_pppUploadHeaps[(int)(m_rangeInHeap.Begin / 65536)][k][iBufferIndex];
 
 	memcpy(m_pppBufferAddressPointer[k][iBufferIndex], m_pBezierPoints, m_iSize);
 	
