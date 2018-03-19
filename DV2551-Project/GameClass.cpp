@@ -350,11 +350,6 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	m_dDeltaTime = dDeltaTime;
 
-	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
-
-
-	
-	m_pCopyHighway->Wait(m_pCopyWaitIndex[iBufferIndex]);	//WAIT COPY
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 	if (pCopyCL == nullptr)
 		int stop = 0;
@@ -367,8 +362,9 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 
 	m_pCopyTimer->Stop(pCopyCL);
 	m_pCopyTimer->ResolveQuery(pCopyCL);
+	m_pCopyHighway->Wait(m_pCopyWaitIndex[iBufferIndex]);	//WAIT COPY
+
 	m_pCopyHighway->QueueCL(pCopyCL);
-	
 	m_pCopyWaitIndex[iBufferIndex] = m_pCopyHighway->ExecuteCQ();
 
 	m_dDeltaTime = dDeltaTime;
@@ -422,12 +418,8 @@ void GameClass::Frame()
 	m_pGraphicsTimer->Stop(pGraphicsCL);
 	m_pGraphicsTimer->ResolveQuery(pGraphicsCL);
 
-	m_pGraphicsHighway->QueueCL(pGraphicsCL);
-
-
-	//m_pCopyHighway->Wait(m_pCopyWaitIndex[iBufferIndex]);	//WAIT COPY
-
 	
+
 	if (iBufferIndex == 0)
 	{
 		m_pCopyTimer->CalculateTime();
@@ -437,13 +429,15 @@ void GameClass::Frame()
 
 		TicksToSeconds();
 	}
-	//m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
 	{
 		m_pGraphicsTimer->CalculateTime();
 		m_pTimingData[1].start = m_pGraphicsTimer->GetBeginTime();
 		m_pGraphicsTimer->GetDeltaTime();
 		m_pTimingData[1].end = m_pGraphicsTimer->GetEndTime();
 	}
+
+	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
+	m_pGraphicsHighway->QueueCL(pGraphicsCL);
 	m_pRTVWaitIndex[iBufferIndex] = m_pGraphicsHighway->ExecuteCQ();
 
 	m_pSwapChain->Present(0, 0);
