@@ -16,7 +16,7 @@ cbuffer camera : register(b0)
 
 cbuffer bezier : register(b1)
 {
-	float4 bezierVertices[16]; //bezierVertices[16].w = nr of patches in x (same as z)
+	float4 bezierVertices[16];
 };
 
 cbuffer bezierOffset : register(b2)
@@ -45,6 +45,5 @@ float4 main(float2 input : UV) : SV_POSITION
 	vert.x += offset.x;
 	vert.z += offset.y;
 
-	//return mul(float4(input.x, 0, input.y, 1), vpMat);
 	return mul(vert, vpMat);
 }
