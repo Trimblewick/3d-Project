@@ -14,19 +14,32 @@
 #include <time.h>
 #include <stdlib.h>
 
+ID3D12Resource**				BezierClass::s_ppUploadHeaps;
 
-BezierClass::BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource** ppUploadHeap, ID3D12Resource** ppConstantHeap,
-	unsigned char** ppBufferAddressPointers, int iNrOfPoints, float4* pBezierPoints, double* pPointsOffset, unsigned int iBufferCount)
+void BezierClass::SetUploadHeaps(ID3D12Resource** pUploadHeap)
+{
+	s_ppUploadHeaps = pUploadHeap;
+}
+
+ID3D12Resource ** BezierClass::GetUploadHeaps()
+{
+	return s_ppUploadHeaps;
+}
+
+BezierClass::BezierClass(ID3D12DescriptorHeap* pDH, ID3D12Resource*** pppUploadHeap, ID3D12Resource** ppConstantHeap,
+	unsigned char*** pppBufferAddressPointers, int iNrOfPoints, float4* pBezierPoints, double* pPointsTimeOffset, unsigned int iBufferCount)
 {
 	//if (s_pUploadHeap == nullptr)
 		//OutputDebugString(L"No Upload Heap Availible, need to set one using SetUploadHeap before creating any instances of this class");
 
 	m_iNrOfPoint = iNrOfPoints;
+	m_iSize = m_iNrOfPoint * sizeof(float4);
 	m_pConstantDescHeap = pDH;
-	m_ppUploadHeap = ppUploadHeap;
+	m_pppUploadHeap = pppUploadHeap;
 	m_ppConstantBuffer = ppConstantHeap;
-	m_ppBufferAddressPointer = ppBufferAddressPointers;
-	m_pDeltaTimePoints = pPointsOffset;
+	m_pppBufferAddressPointer = pppBufferAddressPointers;
+	m_bPingPong = false;
+	m_pDeltaTimePoints = pPointsTimeOffset;
 	m_pBezierPoints = pBezierPoints;
 
 
@@ -65,14 +78,20 @@ BezierClass::~BezierClass()
 	SAFE_RELEASE(m_pConstantDescHeap);
 	for (int i = 0; i < _iBufferCount; ++i)
 	{
-		SAFE_RELEASE(m_ppUploadHeap[i]);
+		SAFE_RELEASE(m_pppUploadHeap[0][i]);
+		SAFE_RELEASE(m_pppUploadHeap[1][i]);
 		SAFE_RELEASE(m_ppConstantBuffer[i]);
 	}
-	delete[] m_ppUploadHeap;
+	for (int i = 0; i < 2; ++i)
+	{
+		delete[] m_pppUploadHeap[i];
+		delete[] m_pppBufferAddressPointer[i];
+	}
+	delete[] m_pppUploadHeap;
+	delete[] m_pppBufferAddressPointer;
 	delete[] m_ppConstantBuffer;
 	delete[] m_pBezierPoints;
 	delete[] m_pDeltaTimePoints;
-	delete[] m_ppBufferAddressPointer;
 	delete[] m_pTransitionToConstant;
 	delete[] m_pTransitionToCopyDest;
 }
@@ -86,16 +105,21 @@ void BezierClass::UpdateBezierPoints(ID3D12GraphicsCommandList* pCopyCL, double 
 
 		m_pBezierPoints[i].y = sin(m_pDeltaTimePoints[i]);
 	}
+	int k = (int)m_bPingPong;
+	bool test = !m_bPingPong;
 
-	memcpy(m_ppBufferAddressPointer[iBufferIndex], m_pBezierPoints, m_iNrOfPoint * sizeof(float4));
-	pCopyCL->CopyResource(m_ppConstantBuffer[iBufferIndex], m_ppUploadHeap[iBufferIndex]);
+	memcpy(m_pppBufferAddressPointer[k][iBufferIndex], m_pBezierPoints, m_iSize);
+	
+	pCopyCL->CopyResource(m_ppConstantBuffer[iBufferIndex], m_pppUploadHeap[k][iBufferIndex]);
+	//pCopyCL->CopyBufferRegion(m_ppConstantBuffer[iBufferIndex], 0, m_pppUploadHeap[iBufferIndex][k], m_rangeInHeap.Begin, m_iSize);
+	m_bPingPong = !m_bPingPong;
 }
 
 
 void BezierClass::BindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)
 {
 	pCL->ResourceBarrier(1, &m_pTransitionToConstant[iBufferIndex]);
-	pCL->SetGraphicsRootConstantBufferView(1, m_ppUploadHeap[iBufferIndex]->GetGPUVirtualAddress()); //Bind to shader register 
+	pCL->SetGraphicsRootConstantBufferView(1, m_ppConstantBuffer[iBufferIndex]->GetGPUVirtualAddress()); //Bind to shader register 
 }
 
 void BezierClass::UnbindBezier(ID3D12GraphicsCommandList * pCL, unsigned int iBufferIndex)

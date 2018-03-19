@@ -22,6 +22,7 @@ public:
 		float pad4;
 	};
 
+
 	Camera(CameraBuffer data, D3D12_VIEWPORT viewport, D3D12_RECT scissorRect, ID3D12Resource* pUploadHeap, unsigned char** ppUploadHeapAdressPointer,
 		ID3D12Resource** ppBufferMatrixHeap, unsigned int iBufferCount, ID3D12DescriptorHeap* pDH);
 	~Camera();
