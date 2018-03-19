@@ -444,8 +444,6 @@ void GameClass::TicksToSeconds()
 		end[i] = (m_pTimingData[i].end - m_pTimingData[i].GPUCalibration) / (double)1000000000;
 	}
 
-	
-
 	//Calculate offset for CQ1
 	double offset = CPUCalibration[0] - CPUCalibration[1] - GPUCalibration[0] + GPUCalibration[1];
 
@@ -460,7 +458,7 @@ void GameClass::TicksToSeconds()
 	double end1 = end[1];
 	if (start[0] < end[1] && start[1] < end[0])
 	{
-		int stopper = 0;
+		OutputDebugString(L"Overlap Of Queues");
 	}
 	
 }
