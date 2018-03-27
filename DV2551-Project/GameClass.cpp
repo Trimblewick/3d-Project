@@ -256,7 +256,7 @@ bool GameClass::Initialize(Window* pWindow)
 	SAFE_RELEASE(pUploadHeapVertexBuffer);//Only for init...
 	SAFE_RELEASE(pUploadHeapIndexBuffer);
 
-	m_iNrOfPlanes = 256;
+	m_iNrOfPlanes = 1024;
 	m_ppBezierClass = new BezierClass*[m_iNrOfPlanes];
 	for (int i = 0; i < m_iNrOfPlanes; ++i)
 	{

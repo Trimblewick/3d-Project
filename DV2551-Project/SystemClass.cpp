@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "SystemClass.h"
-
+#include <fstream>
 
 Window SystemClass::s_window;
 GameClass SystemClass::s_game;
@@ -88,7 +88,12 @@ void SystemClass::Run()
 	int smoothFPSCounter = 0;
 	int addFPS = 0;
 	float fFPS = 0;
-
+	float sumFPS = 0;
+	float avgFPS = 0;
+	float second = 0;
+	int seconds = 0;
+	std::ofstream outFile;
+	outFile.open("OneDirect.txt");
 	while (s_bRunning)
 	{
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
@@ -109,20 +114,35 @@ void SystemClass::Run()
 			auto currentTime = std::chrono::steady_clock::now();
 			s_fDeltaTime = (currentTime - prevTime).count() / 1000000000.0f;
 			prevTime = currentTime;
-			
-			if(smoothFPSCounter == 0)
-				fFPS = 1.0f / s_fDeltaTime;
 
-			fFPS = fFPS;
+			second += s_fDeltaTime;
+			fFPS = 1.0f / s_fDeltaTime;
+			sumFPS += fFPS;
+			addFPS++;
+			if (second > 1)
+			{
+				seconds++;
+				avgFPS = sumFPS / addFPS;
+				outFile << seconds << '\t' << avgFPS << '\n';
+				addFPS = 0;
+				second = 0;
+				sumFPS = 0;
+			}
+			
+			if (seconds == 30)
+			{
+				break;
+			}
+			/*fFPS = fFPS;
 			if (smoothFPSCounter % 512 == 0 && smoothFPSCounter != 0)
 			{
 				fFPS = addFPS / 512;
 				addFPS = 0;
 			}
 			addFPS += 1.0f / s_fDeltaTime;
-			smoothFPSCounter += 1;
+			smoothFPSCounter += 1;*/
 
-			std::string sFPS = "FPS: " + std::to_string(fFPS);
+			std::string sFPS = "FPS: " + std::to_string(avgFPS);
 			s_window.SetTitle(sFPS);
 
 
@@ -137,7 +157,7 @@ void SystemClass::Run()
 		}
 	}
 	
-	
+	outFile.close();
 }
 
 void SystemClass::Pause()
