@@ -24,7 +24,7 @@ bool GameClass::Initialize(Window* pWindow)
 	if (bDirectOnly)
 		m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_DIRECT, 6);
 	else
-		m_pCopyHighway = m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 6);
+		m_pCopyHighway = m_pGraphicsHighway;//m_pD3DFactory->CreateGPUHighway(D3D12_COMMAND_LIST_TYPE_COPY, 6);
 
 	//set up swapchain with the graphics highway
 	DXGI_MODE_DESC descMode = {};
@@ -266,23 +266,23 @@ bool GameClass::Initialize(Window* pWindow)
 
 	//BezierClass::SetUploadHeaps(nullptr);
 
-	LARGE_INTEGER tempFreq;
-	QueryPerformanceCounter(&tempFreq);
-	m_CPUcount = tempFreq.QuadPart;
-	QueryPerformanceFrequency(&tempFreq);
-	m_CPUfrequency = tempFreq.QuadPart;
+	//LARGE_INTEGER tempFreq;
+	//QueryPerformanceCounter(&tempFreq);
+	//m_CPUcount = tempFreq.QuadPart;
+	//QueryPerformanceFrequency(&tempFreq);
+	//m_CPUfrequency = tempFreq.QuadPart;
 
-	m_pGraphicsTimer = new D3D12Timer(m_pD3DFactory->GetDevice(), D3D12_QUERY_HEAP_TYPE::D3D12_QUERY_HEAP_TYPE_TIMESTAMP);
-	if (bDirectOnly)
-		m_pCopyTimer = new D3D12Timer(m_pD3DFactory->GetDevice(), D3D12_QUERY_HEAP_TYPE::D3D12_QUERY_HEAP_TYPE_TIMESTAMP);
-	else
-		m_pCopyTimer = new D3D12Timer(m_pD3DFactory->GetDevice(), D3D12_QUERY_HEAP_TYPE::D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP);
+	//m_pGraphicsTimer = new D3D12Timer(m_pD3DFactory->GetDevice(), D3D12_QUERY_HEAP_TYPE::D3D12_QUERY_HEAP_TYPE_TIMESTAMP);
+	//if (bDirectOnly)
+	//	m_pCopyTimer = new D3D12Timer(m_pD3DFactory->GetDevice(), D3D12_QUERY_HEAP_TYPE::D3D12_QUERY_HEAP_TYPE_TIMESTAMP);
+	//else
+	//	m_pCopyTimer = new D3D12Timer(m_pD3DFactory->GetDevice(), D3D12_QUERY_HEAP_TYPE::D3D12_QUERY_HEAP_TYPE_COPY_QUEUE_TIMESTAMP);
 
-	m_pCopyHighway->GetCQ()->GetClockCalibration(&m_pTimingData[0].GPUCalibration, &m_pTimingData[0].CPUCalibration);
-	m_pGraphicsHighway->GetCQ()->GetClockCalibration(&m_pTimingData[1].GPUCalibration, &m_pTimingData[1].CPUCalibration);
+	//m_pCopyHighway->GetCQ()->GetClockCalibration(&m_pTimingData[0].GPUCalibration, &m_pTimingData[0].CPUCalibration);
+	//m_pGraphicsHighway->GetCQ()->GetClockCalibration(&m_pTimingData[1].GPUCalibration, &m_pTimingData[1].CPUCalibration);
 
-	m_pCopyHighway->GetCQ()->GetTimestampFrequency(&m_pTimingData[0].GPUFrequency);
-	m_pGraphicsHighway->GetCQ()->GetTimestampFrequency(&m_pTimingData[1].GPUFrequency);
+	//m_pCopyHighway->GetCQ()->GetTimestampFrequency(&m_pTimingData[0].GPUFrequency);
+	//m_pGraphicsHighway->GetCQ()->GetTimestampFrequency(&m_pTimingData[1].GPUFrequency);
 
 	return true;
 }
@@ -331,16 +331,16 @@ void GameClass::CleanUp()
 	SAFE_RELEASE(m_pPSO);
 	SAFE_RELEASE(m_pRS);
 	SAFE_RELEASE(m_pSwapChain);
-	if (m_pGraphicsTimer)
-	{
-		delete m_pGraphicsTimer;
-		m_pGraphicsTimer = nullptr;
-	}
-	if (m_pCopyTimer)
-	{
-		delete m_pCopyTimer;
-		m_pCopyTimer = nullptr;
-	}
+	//if (m_pGraphicsTimer)
+	//{
+	//	delete m_pGraphicsTimer;
+	//	m_pGraphicsTimer = nullptr;
+	//}
+	//if (m_pCopyTimer)
+	//{
+	//	delete m_pCopyTimer;
+	//	m_pCopyTimer = nullptr;
+	//}
 
 
 }
@@ -353,19 +353,20 @@ void GameClass::Update(Input * pInput, double dDeltaTime)
 	ID3D12GraphicsCommandList* pCopyCL = m_pCopyHighway->GetFreshCL();
 	if (pCopyCL == nullptr)
 		int stop = 0;
-	m_pCopyTimer->Start(pCopyCL);
+	//m_pCopyTimer->Start(pCopyCL);
 	int i = 0;
 	for (; i < m_iNrOfPlanes; ++i)
 	{
 		m_ppBezierClass[i]->UpdateBezierPoints(pCopyCL, m_dDeltaTime, iBufferIndex);
 	}
 
-	m_pCopyTimer->Stop(pCopyCL);
-	m_pCopyTimer->ResolveQuery(pCopyCL);
-	m_pCopyHighway->Wait(m_pCopyWaitIndex[iBufferIndex]);	//WAIT COPY
+	//m_pCopyTimer->Stop(pCopyCL);
+	//m_pCopyTimer->ResolveQuery(pCopyCL);
+	//m_pCopyHighway->Wait(m_pCopyWaitIndex[iBufferIndex]);	//WAIT COPY
 
+	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
 	m_pCopyHighway->QueueCL(pCopyCL);
-	m_pCopyWaitIndex[iBufferIndex] = m_pCopyHighway->ExecuteCQ();
+	//m_pCopyWaitIndex[iBufferIndex] = m_pCopyHighway->ExecuteCQ();
 
 	m_dDeltaTime = dDeltaTime;
 	m_pCamera->Update(pInput, dDeltaTime, iBufferIndex);
@@ -377,9 +378,9 @@ void GameClass::TransitionBackBufferIntoRenderTargetState()
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
 	
-	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
+	/*ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
 
-	m_pGraphicsHighway->QueueCL(pCL);
+	m_pGraphicsHighway->QueueCL(pCL);*/
 }
 
 void GameClass::Frame()
@@ -391,7 +392,7 @@ void GameClass::Frame()
 
 	ID3D12GraphicsCommandList* pGraphicsCL = m_pGraphicsHighway->GetFreshCL(m_pPSO);
 	
-	m_pGraphicsTimer->Start(pGraphicsCL);
+	//m_pGraphicsTimer->Start(pGraphicsCL);
 
 	pGraphicsCL->ResourceBarrier(1, &m_pBarrierTransitionToRTV[iBufferIndex]);
 	pGraphicsCL->ClearRenderTargetView(handleDH, m_pClearColor, NULL, nullptr);
@@ -415,28 +416,27 @@ void GameClass::Frame()
 
 	m_pCamera->UnbindCamera(pGraphicsCL, iBufferIndex);
 	pGraphicsCL->ResourceBarrier(1, &m_pBarrierTransitionToPresent[iBufferIndex]);
-	m_pGraphicsTimer->Stop(pGraphicsCL);
-	m_pGraphicsTimer->ResolveQuery(pGraphicsCL);
+	//m_pGraphicsTimer->Stop(pGraphicsCL);
+	//m_pGraphicsTimer->ResolveQuery(pGraphicsCL);
 
 	
 
-	if (iBufferIndex == 0)
-	{
-		m_pCopyTimer->CalculateTime();
-		m_pTimingData[0].start = m_pCopyTimer->GetBeginTime();
-		m_pCopyTimer->GetDeltaTime();
-		m_pTimingData[0].end = m_pCopyTimer->GetEndTime();
+	//if (iBufferIndex == 0)
+	//{
+	//	m_pCopyTimer->CalculateTime();
+	//	m_pTimingData[0].start = m_pCopyTimer->GetBeginTime();
+	//	m_pCopyTimer->GetDeltaTime();
+	//	m_pTimingData[0].end = m_pCopyTimer->GetEndTime();
 
-		TicksToSeconds();
-	}
-	{
-		m_pGraphicsTimer->CalculateTime();
-		m_pTimingData[1].start = m_pGraphicsTimer->GetBeginTime();
-		m_pGraphicsTimer->GetDeltaTime();
-		m_pTimingData[1].end = m_pGraphicsTimer->GetEndTime();
-	}
+	//	TicksToSeconds();
+	//}
+	//{
+	//	m_pGraphicsTimer->CalculateTime();
+	//	m_pTimingData[1].start = m_pGraphicsTimer->GetBeginTime();
+	//	m_pGraphicsTimer->GetDeltaTime();
+	//	m_pTimingData[1].end = m_pGraphicsTimer->GetEndTime();
+	//}
 
-	m_pGraphicsHighway->Wait(m_pRTVWaitIndex[iBufferIndex]);
 	m_pGraphicsHighway->QueueCL(pGraphicsCL);
 	m_pRTVWaitIndex[iBufferIndex] = m_pGraphicsHighway->ExecuteCQ();
 
@@ -447,7 +447,7 @@ void GameClass::Frame()
 void GameClass::PresentBackBuffer()
 {
 	int iBufferIndex = m_pSwapChain->GetCurrentBackBufferIndex();
-	ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
+	//ID3D12GraphicsCommandList* pCL = m_pGraphicsHighway->GetFreshCL();
 
 	
 }
